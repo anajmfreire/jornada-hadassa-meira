@@ -14,9 +14,14 @@ var firebaseConfig = {
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-var auth = firebase.auth();
-var db = firebase.database();
+var auth, db;
+try {
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db = firebase.database();
+} catch(e) {
+    console.error('Firebase init error:', e);
+}
 
 var currentUser = null;
 var syncEnabled = false;
@@ -46,7 +51,8 @@ function logout() {
 }
 
 // Listen for auth state changes
-auth.onAuthStateChanged(function(user) {
+if (!auth) { console.error('Firebase auth not available'); }
+auth && auth.onAuthStateChanged(function(user) {
     currentUser = user;
     if (user) {
         syncEnabled = true;
@@ -218,15 +224,12 @@ saveData = function(data) {
 };
 saveData._syncTimeout = null;
 
-// Also sync when extras change
-var _origSetItem = localStorage.setItem;
-localStorage.setItem = function(key, value) {
-    _origSetItem.call(localStorage, key, value);
-    if (key.startsWith('hadassa_') && key !== 'hadassa_last_sync' && syncEnabled && currentUser) {
-        clearTimeout(saveData._syncTimeout);
-        saveData._syncTimeout = setTimeout(syncToCloud, 3000);
+// Sync extras periodically (every 30s if logged in)
+setInterval(function() {
+    if (syncEnabled && currentUser && !isSyncing) {
+        syncToCloud();
     }
-};
+}, 30000);
 
 // ============ INIT ============
 (function initFirebase() {
