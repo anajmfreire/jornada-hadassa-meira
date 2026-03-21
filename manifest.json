@@ -1,0 +1,44 @@
+{
+    "name": "A Jornada de Hadassa Meira",
+    "short_name": "Hadassa Meira",
+    "description": "Acompanhamento completo da gravidez - Ultrassons, Diário, Sintomas, Exames e muito mais",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#fdf2f8",
+    "theme_color": "#ec4899",
+    "orientation": "portrait",
+    "categories": ["health", "lifestyle"],
+    "lang": "pt-BR",
+    "icons": [
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👶</text></svg>",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        },
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%23ec4899'/><text x='256' y='380' font-size='350' text-anchor='middle' fill='white'>👶</text></svg>",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "maskable"
+        }
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Meu Bebê",
+            "url": "./index.html#weekly",
+            "icons": [{"src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👶</text></svg>", "sizes": "any"}]
+        },
+        {
+            "name": "Diário",
+            "url": "./index.html#diary",
+            "icons": [{"src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>", "sizes": "any"}]
+        },
+        {
+            "name": "Exames",
+            "url": "./index.html#exams",
+            "icons": [{"src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧪</text></svg>", "sizes": "any"}]
+        }
+    ]
+}

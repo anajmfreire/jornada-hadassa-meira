@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Testes - A Jornada de Hadassa Meira</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f5f5f5; }
+        h1 { color: #333; }
+        h2 { color: #555; margin-top: 20px; }
+        .test { padding: 8px 12px; margin: 4px 0; border-radius: 6px; font-size: 0.9em; }
+        .pass { background: #dcfce7; color: #15803d; }
+        .fail { background: #fee2e2; color: #dc2626; }
+        .summary { margin-top: 20px; padding: 15px; background: white; border-radius: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+<h1>Testes Unitários — V1.2</h1>
+<p style="color:#666;font-size:0.85em;">
+    AUDIT V1.2 [V12-COD-001]: Testes agora importam funcoes do app.js real ao inves de copias locais.
+</p>
+<div id="results"></div>
+<div id="summary" class="summary"></div>
+
+<!-- Carregar o app.js real para testar as funcoes reais -->
+<!-- Precisamos de um stub minimo do DOM para o app.js nao crashar na init -->
+<div style="display:none">
+    <div id="currentWeek"></div><div id="progressText"></div><div id="progressBar"></div>
+    <div id="dueDate"></div><div id="dashTimeline"></div><div id="upcomingAppointments"></div>
+    <div id="comparisonCard" style="display:none"><div id="comparisonContent"></div></div>
+    <div id="statHeartbeat"></div><div id="statWeight"></div><div id="statFemur"></div><div id="statCCN"></div>
+    <div id="usList"></div><div id="appointList"></div><div id="notesList"></div>
+    <div id="paramStatus"></div><div id="chartTableBody"></div>
+    <div id="usSearchInput"></div>
+    <canvas id="mainChart"></canvas>
+    <table id="weightRefTable"><tbody></tbody></table>
+    <table id="femurRefTable"><tbody></tbody></table>
+    <table id="heartRefTable"><tbody></tbody></table>
+    <input id="cfgBabyName" value="Test"><select id="cfgBabySex"><option>Menina</option></select>
+    <input id="cfgDUM"><input id="cfgDPP"><input id="cfgMomName" value="Test"><input id="cfgDoctor">
+    <input id="cfgApiKey" type="password">
+    <button class="nav-btn" data-section="dashboard"></button>
+    <div class="section active" id="sec-dashboard"></div>
+    <div class="header"><h1></h1><div class="subtitle"></div></div>
+    <button id="themeToggle"><i id="themeIcon" class="fas fa-moon"></i></button>
+    <button id="btnNewUS"></button><button id="btnNewAppoint"></button><button id="btnNewNote"></button>
+    <button id="fabBtn"></button><button id="aiFab"></button>
+    <div id="aiOverlay"></div><div id="aiPanel"><div id="aiMessages"></div></div>
+    <button id="aiCloseBtn"></button><button id="aiSendBtn"></button><input id="aiInput">
+    <button id="btnExport"></button><button id="btnImportTrigger"></button>
+    <input id="importFile" type="file"><button id="btnClearAll"></button>
+    <form id="usForm"><input type="hidden" id="usEditId"><input id="usDate"><input id="usTitle">
+        <input id="usWeeks"><input id="usDays"><input id="usHeartbeat"><input id="usWeight">
+        <input id="usFemur"><input id="usCCN"><input id="usDBP"><input id="usCA">
+        <input id="usCervix"><select id="usPlacenta"><option></option></select><input id="usILA">
+        <input id="usPhoto" type="file"><div id="usPhotoPreview"></div><textarea id="usObs"></textarea></form>
+    <form id="appointForm"><input type="hidden" id="appEditId"><input id="appDate"><input id="appTime">
+        <select id="appType"><option></option></select><input id="appDoctor"><input id="appLocation">
+        <textarea id="appNotes"></textarea></form>
+    <form id="noteForm"><input type="hidden" id="noteEditId"><select id="noteType"><option value="nota">Nota</option></select>
+        <input id="noteTitle"><input id="noteDate"><textarea id="noteContent"></textarea></form>
+    <div class="modal-overlay" id="usModal"></div>
+    <div class="modal-overlay" id="appointModal"></div>
+    <div class="modal-overlay" id="noteModal"></div>
+    <div class="modal-overlay" id="detailModal"><div id="detailTitle"></div><div id="detailContent"></div></div>
+</div>
+
+<script src="app.js"></script>
+<script>
+var passed = 0, failed = 0;
+var results = document.getElementById('results');
+
+function assert(condition, testName) {
+    var div = document.createElement('div');
+    div.className = 'test ' + (condition ? 'pass' : 'fail');
+    div.textContent = (condition ? 'PASS' : 'FAIL') + ': ' + testName;
+    results.appendChild(div);
+    if (condition) passed++; else failed++;
+}
+
+function section(name) {
+    var h = document.createElement('h2');
+    h.textContent = name;
+    results.appendChild(h);
+}
+
+// ========== escapeHtml (from app.js) ==========
+section('escapeHtml');
+assert(escapeHtml('<script>alert("xss")</script>') === '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;', 'XSS script tag');
+assert(escapeHtml('') === '', 'empty string');
+assert(escapeHtml(null) === '', 'null');
+assert(escapeHtml(undefined) === '', 'undefined');
+assert(escapeHtml(123) === '123', 'number');
+assert(escapeHtml("it's a test") === "it&#039;s a test", 'single quotes');
+assert(escapeHtml('<img src=x onerror=alert(1)>') === '&lt;img src=x onerror=alert(1)&gt;', 'img injection');
+
+// ========== formatDate (from app.js) ==========
+section('formatDate');
+assert(formatDate('2026-03-20') === '20/03/2026', 'standard date');
+assert(formatDate('2025-01-01') === '01/01/2025', 'new year');
+assert(formatDate('') === '', 'empty string');
+assert(formatDate(null) === '', 'null');
+// AUDIT V1.2 [V12-SEC-006]: formatDate agora valida formato
+assert(formatDate('<script>') === '&lt;script&gt;', 'XSS in date returns escaped');
+assert(formatDate('not-a-date') === 'not-a-date', 'invalid format returns escaped input');
+
+// ========== calcWeeksFromDUM (from app.js) ==========
+section('calcWeeksFromDUM');
+var r1 = calcWeeksFromDUM('2025-11-19', '2026-03-20');
+assert(r1.weeks === 17, 'weeks = 17 for DUM 2025-11-19 to 2026-03-20');
+assert(r1.days === 2, 'days = 2');
+assert(r1.totalDays === 121, 'totalDays = 121');
+
+var r2 = calcWeeksFromDUM('2025-11-19', '2025-11-19');
+assert(r2.weeks === 0, 'same day = 0 weeks');
+assert(r2.days === 0, 'same day = 0 days');
+
+var r3 = calcWeeksFromDUM('2025-11-19', '2025-11-26');
+assert(r3.weeks === 1, '7 days = 1 week');
+assert(r3.days === 0, '7 days = 0 remaining days');
+
+// ========== genId (from app.js) ==========
+section('genId');
+var id1 = genId();
+var id2 = genId();
+assert(typeof id1 === 'string', 'returns string');
+assert(id1.length > 0, 'non-empty');
+assert(id1 !== id2, 'unique IDs');
+
+// ========== Analysis functions (from app.js) ==========
+section('analyzeHeartbeat');
+var hb1 = analyzeHeartbeat(150, 18);
+assert(hb1 !== null, 'returns result for valid input');
+assert(hb1.status === 'safe', '150bpm at 18w is safe (range 125-165)');
+
+var hb2 = analyzeHeartbeat(100, 18);
+assert(hb2 !== null, 'returns result for low value');
+assert(hb2.status === 'warning', '100bpm at 18w is warning');
+
+assert(analyzeHeartbeat(null, 18) === null, 'null value returns null');
+assert(analyzeHeartbeat(150, null) === null, 'null week returns null');
+assert(analyzeHeartbeat(150, 99) === null, 'unknown week returns null');
+
+section('analyzeWeight');
+var w1 = analyzeWeight(190, 18);
+assert(w1 !== null, 'returns result for valid input');
+assert(w1.status === 'safe', '190g at 18w is safe');
+
+section('analyzeFemur');
+var f1 = analyzeFemur(27, 18);
+assert(f1 !== null, 'returns result');
+assert(f1.status === 'safe', '27mm at 18w is safe (range 24-29)');
+
+var f2 = analyzeFemur(10, 18);
+assert(f2.status === 'warning', '10mm at 18w is warning');
+
+section('analyzeCervix');
+var c1 = analyzeCervix(40);
+assert(c1.status === 'safe', '40mm is safe');
+var c2 = analyzeCervix(20);
+assert(c2.status === 'warning', '20mm is warning');
+var c3 = analyzeCervix(10);
+assert(c3.status === 'danger', '10mm is danger');
+assert(analyzeCervix(null) === null, 'null returns null');
+
+// ========== Constants ==========
+section('Constants');
+assert(PREGNANCY_DAYS === 280, 'PREGNANCY_DAYS = 280');
+assert(SAFE_CERVIX_MM === 25, 'SAFE_CERVIX_MM = 25');
+assert(MS_PER_DAY === 86400000, 'MS_PER_DAY');
+
+// DPP calculation
+var dumDate = new Date('2025-11-19T12:00:00');
+var dpp = new Date(dumDate.getTime() + PREGNANCY_DAYS * MS_PER_DAY);
+assert(dpp.getFullYear() === 2026, 'DPP: year 2026');
+assert(dpp.getMonth() === 7, 'DPP: month August (7)');
+assert(dpp.getDate() === 26, 'DPP: day 26');
+
+// ========== saveData error handling ==========
+section('saveData');
+// saveData should not throw for valid data
+var testData = getDefaultData();
+try {
+    saveData(testData);
+    assert(true, 'saveData does not throw for valid data');
+} catch(e) {
+    assert(false, 'saveData threw unexpectedly: ' + e.message);
+}
+
+// Verify data was saved correctly
+var loaded = loadData();
+assert(loaded.config.babyName === testData.config.babyName, 'loadData retrieves saved data');
+
+// ========== Summary ==========
+document.getElementById('summary').textContent = 'Total: ' + (passed + failed) + ' | Passed: ' + passed + ' | Failed: ' + failed;
+document.getElementById('summary').style.color = failed === 0 ? '#15803d' : '#dc2626';
+</script>
+</body>
+</html>

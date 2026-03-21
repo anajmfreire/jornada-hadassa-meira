@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Jornada de Hadassa Meira</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js" integrity="sha384-b8MpgG2ZzWN6OPAtiB1JiBmDr9MpTt3NKK6KQf61hC/L7X4wJrvoTeVmMFPgp3nL" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" integrity="sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g" crossorigin="anonymous">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ec4899">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; connect-src 'self' https://generativelanguage.googleapis.com; img-src 'self' data: blob:;">
+</head>
+<body>
+
+<!-- Decorative floating elements -->
+<div id="themeDecorContainer"></div>
+
+<!-- Header -->
+<header class="header" role="banner">
+    <div class="baby-icon" aria-hidden="true">&#x1F476;&#x1F338;</div>
+    <h1>A Jornada de Hadassa Meira</h1>
+    <div class="subtitle" aria-label="Informações do bebê">Hadassa Meira (Menina) &#x1F49C;</div>
+</header>
+<button class="theme-toggle" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar modo escuro">
+    <i class="fas fa-moon" id="themeIcon"></i>
+</button>
+
+<!-- Week Banner -->
+<div class="week-banner" id="weekBanner">
+    <div class="week-info">
+        <div class="week-number" id="currentWeek">--</div>
+        <div class="week-label">semanas</div>
+    </div>
+    <div class="progress-section">
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+        </div>
+        <div class="progress-text" id="progressText">Configurar DUM para calcular</div>
+    </div>
+    <div class="due-date">
+        <span>Previsão</span>
+        <strong id="dueDate">--/--/----</strong>
+        <div style="font-size:0.6em; color:var(--text-light); margin-top:2px;" title="Cálculo baseado em 280 dias a partir da DUM. Consulte seu obstetra para confirmação.">*estimativa</div>
+    </div>
+</div>
+
+<!-- Bottom Navigation (5 main tabs) -->
+<nav class="bottom-nav" role="navigation" aria-label="Menu principal">
+    <button class="bottom-nav-btn active" data-section="dashboard"><i class="fas fa-home"></i><span>Início</span></button>
+    <button class="bottom-nav-btn" data-section="weekly"><i class="fas fa-baby"></i><span>Meu Bebê</span></button>
+    <button class="bottom-nav-btn" data-section="diary"><i class="fas fa-book"></i><span>Diário</span></button>
+    <button class="bottom-nav-btn" data-section="exams"><i class="fas fa-file-medical"></i><span>Exames</span></button>
+    <button class="bottom-nav-btn" data-section="config"><i class="fas fa-cog"></i><span>Config</span></button>
+</nav>
+
+<!-- Old nav hidden - kept for compatibility -->
+<nav class="nav" role="navigation" style="display:none;">
+    <button class="nav-btn active" data-section="dashboard"></button>
+</nav>
+
+<!-- Main Content -->
+<main class="main-content" role="main" aria-live="polite">
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="sec-dashboard">
+        <div class="stats-grid" id="dashStats">
+            <div class="stat-card">
+                <div class="stat-icon">&#x1F49C;</div>
+                <div class="stat-value" id="statHeartbeat">--</div>
+                <div class="stat-label">Batimentos (bpm)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">&#x2696;&#xFE0F;</div>
+                <div class="stat-value" id="statWeight">--</div>
+                <div class="stat-label">Peso (g)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">&#x1F9B4;</div>
+                <div class="stat-value" id="statFemur">--</div>
+                <div class="stat-label">Femur (mm)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">&#x1F4CF;</div>
+                <div class="stat-value" id="statCCN">--</div>
+                <div class="stat-label">CCN (mm)</div>
+            </div>
+        </div>
+
+        <!-- Quick Access Menu Grid -->
+        <div class="menu-grid">
+            <button class="menu-card" data-goto="weekly"><span class="menu-icon">&#x1F476;</span><span class="menu-label">Meu Bebê</span></button>
+            <button class="menu-card" data-goto="diary"><span class="menu-icon">&#x1F4D6;</span><span class="menu-label">Diário</span></button>
+            <button class="menu-card" data-goto="symptoms"><span class="menu-icon">&#x1FA7A;</span><span class="menu-label">Sintomas</span></button>
+            <button class="menu-card" data-goto="exams"><span class="menu-icon">&#x1F9EA;</span><span class="menu-label">Exames</span></button>
+            <button class="menu-card" data-goto="appointments"><span class="menu-icon">&#x1F4C5;</span><span class="menu-label">Consultas</span></button>
+            <button class="menu-card" data-goto="lists"><span class="menu-icon">&#x1F6D2;</span><span class="menu-label">Listas</span></button>
+            <button class="menu-card" data-goto="birthplan"><span class="menu-icon">&#x1F49C;</span><span class="menu-label">Parto</span></button>
+            <button class="menu-card" data-goto="health"><span class="menu-icon">&#x1F34E;</span><span class="menu-label">Saúde</span></button>
+            <button class="menu-card" data-goto="ultrasounds"><span class="menu-icon">&#x1F4F7;</span><span class="menu-label">Ultrassons</span></button>
+            <button class="menu-card" data-goto="charts"><span class="menu-icon">&#x1F4CA;</span><span class="menu-label">Gráficos</span></button>
+            <button class="menu-card" data-goto="reports"><span class="menu-icon">&#x1F4C4;</span><span class="menu-label">Relatórios</span></button>
+            <button class="menu-card" data-goto="notes"><span class="menu-icon">&#x1F4DD;</span><span class="menu-label">Notas</span></button>
+            <button class="menu-card" data-goto="tools"><span class="menu-icon">&#x1F527;</span><span class="menu-label">Ferramentas</span></button>
+            <button class="menu-card" data-goto="faq"><span class="menu-icon">&#x2753;</span><span class="menu-label">FAQ</span></button>
+            <button class="menu-card" data-goto="glossary"><span class="menu-icon">&#x1F4DA;</span><span class="menu-label">Glossário</span></button>
+            <button class="menu-card" data-goto="params"><span class="menu-icon">&#x1F4CF;</span><span class="menu-label">Parâmetros</span></button>
+            <button class="menu-card" data-goto="config"><span class="menu-icon">&#x2699;&#xFE0F;</span><span class="menu-label">Config</span></button>
+        </div>
+
+        <!-- Welcome message -->
+        <div id="welcomeMsg" style="text-align:center;font-size:1.1em;font-weight:700;color:var(--pink-600);margin-bottom:10px;"></div>
+
+        <!-- Baby weight percentile -->
+        <div id="babyWeightPercentile"></div>
+
+        <!-- Hydration Widget -->
+        <div class="card" id="hydrationCard">
+            <div class="card-title"><i class="fas fa-tint"></i> Hidratação do Dia</div>
+            <div id="hydrationContent"></div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="card">
+            <div class="card-title"><i class="fas fa-calendar"></i> Meu Calendário</div>
+            <div id="dashCalendar"></div>
+        </div>
+
+        <!-- UX-017: Achievements -->
+        <div id="achievementsContainer"></div>
+
+        <!-- Countdown + Milestone + Fruit -->
+        <div class="card" id="milestoneCard" style="display:none;">
+            <div id="countdownContent"></div>
+            <div id="milestoneContent"></div>
+            <div id="fruitContent"></div>
+        </div>
+
+        <!-- Last comparison -->
+        <div class="card" id="comparisonCard" style="display:none;">
+            <div class="card-title"><i class="fas fa-exchange-alt"></i> Último Comparativo</div>
+            <div id="comparisonContent"></div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="card">
+            <div class="card-title"><i class="fas fa-stream"></i> Linha do Tempo</div>
+            <div class="timeline" id="dashTimeline">
+                <div class="empty-state">
+                    <i class="fas fa-baby-carriage"></i>
+                    <p>Adicione seu primeiro ultrassom!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exam Checklist -->
+        <div class="card" id="examChecklistCard" style="display:none;">
+            <div class="card-title"><i class="fas fa-clipboard-check"></i> Exames do Trimestre</div>
+            <div id="examChecklistContent"></div>
+        </div>
+
+        <!-- FEAT-008: Quick symptom tracker -->
+        <div class="card" id="symptomTrackerCard">
+            <div class="card-title"><i class="fas fa-notes-medical"></i> Registro Rápido de Sintomas</div>
+            <div id="symptomTrackerContent"></div>
+        </div>
+
+        <!-- FEAT-004: Kick counter (visible >= 28 weeks) -->
+        <div class="card" id="kickCounterCard" style="display:none;">
+            <div class="card-title"><i class="fas fa-baby"></i> Contador de Movimentos</div>
+            <div id="kickCounterContent"></div>
+        </div>
+
+        <!-- FEAT-007: Share button -->
+        <div style="text-align:center;margin-bottom:12px;">
+            <button class="btn btn-secondary" id="btnShareCard" style="border-radius:25px;padding:10px 24px;">
+                <i class="fas fa-share-alt"></i> Compartilhar Card
+            </button>
+        </div>
+
+        <!-- Upcoming appointments -->
+        <div class="card">
+            <div class="card-title"><i class="fas fa-calendar-check"></i> Próximas Consultas</div>
+            <div id="upcomingAppointments">
+                <div class="empty-state">
+                    <i class="fas fa-calendar-plus"></i>
+                    <p>Nenhuma consulta agendada</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ULTRASOUNDS -->
+    <div class="section" id="sec-ultrasounds">
+        <div style="margin-bottom:10px;">
+            <input type="text" id="usSearchInput" placeholder="Buscar por título, semana ou data..." style="width:100%;padding:10px 15px;border:2px solid var(--pink-200);border-radius:12px;font-family:'Nunito',sans-serif;font-size:0.85em;background:var(--soft-white);">
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:4px;">
+            <button class="btn btn-primary" id="btnNewUS" style="flex:1;">
+                <i class="fas fa-plus"></i> Novo Ultrassom
+            </button>
+            <button class="btn btn-secondary" id="btnGallery" style="flex-shrink:0;">
+                <i class="fas fa-images"></i> Galeria
+            </button>
+        </div>
+        <br>
+        <div id="usList">
+            <div class="empty-state">
+                <i class="fas fa-baby"></i>
+                <p>Nenhum ultrassom registrado ainda</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="section" id="sec-charts">
+        <div class="sub-tabs">
+            <button class="sub-tab active" data-chart="heartbeat">Batimentos</button>
+            <button class="sub-tab" data-chart="weight">Peso</button>
+            <button class="sub-tab" data-chart="femur">Fêmur</button>
+            <button class="sub-tab" data-chart="ccn">CCN</button>
+            <button class="sub-tab" data-chart="momWeight">Peso Mãe</button>
+            <button class="sub-tab" data-chart="radar">Radar</button>
+        </div>
+        <div class="card">
+            <div class="chart-container">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+        <div class="card" id="chartComparisonCard">
+            <div class="card-title"><i class="fas fa-table"></i> Dados Comparativos</div>
+            <div style="overflow-x: auto;">
+                <table class="params-table" id="chartTable">
+                    <thead><tr><th>Data</th><th>Semanas</th><th>Valor</th><th>Variação</th></tr></thead>
+                    <tbody id="chartTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPOINTMENTS -->
+    <div class="section" id="sec-appointments">
+        <button class="btn btn-primary btn-block" id="btnNewAppoint">
+            <i class="fas fa-plus"></i> Nova Consulta
+        </button>
+        <br>
+        <div id="appointList">
+            <div class="empty-state">
+                <i class="fas fa-calendar-alt"></i>
+                <p>Nenhuma consulta agendada</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTES -->
+    <div class="section" id="sec-notes">
+        <div class="sub-tabs">
+            <button class="sub-tab active" data-notetype="all">Todas</button>
+            <button class="sub-tab" data-notetype="nota">Notas</button>
+            <button class="sub-tab" data-notetype="receita">Receitas</button>
+            <button class="sub-tab" data-notetype="sintoma">Sintomas</button>
+            <button class="sub-tab" data-notetype="medicacao">Medicações</button>
+        </div>
+        <button class="btn btn-primary btn-block" id="btnNewNote">
+            <i class="fas fa-plus"></i> Nova Anotação
+        </button>
+        <br>
+        <div id="notesList">
+            <div class="empty-state">
+                <i class="fas fa-book"></i>
+                <p>Nenhuma anotação ainda</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PARAMETERS -->
+    <div class="section" id="sec-params">
+        <div class="card">
+            <div class="card-title"><i class="fas fa-info-circle"></i> Tabela de Referência - Peso por Semana</div>
+            <div style="overflow-x: auto;">
+                <table class="ref-table" id="weightRefTable">
+                    <thead><tr><th>Semana</th><th>Peso Min (g)</th><th>Peso Médio (g)</th><th>Peso Max (g)</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="fas fa-info-circle"></i> Tabela de Referência - Fêmur por Semana</div>
+            <div style="overflow-x: auto;">
+                <table class="ref-table" id="femurRefTable">
+                    <thead><tr><th>Semana</th><th>Fêmur Min (mm)</th><th>Fêmur Médio (mm)</th><th>Fêmur Max (mm)</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="fas fa-info-circle"></i> Tabela de Referência - Batimentos por Semana</div>
+            <div style="overflow-x: auto;">
+                <table class="ref-table" id="heartRefTable">
+                    <thead><tr><th>Semana</th><th>Min (bpm)</th><th>Normal (bpm)</th><th>Max (bpm)</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="fas fa-heartbeat"></i> Status do Seu Bebê</div>
+            <div id="paramStatus">
+                <div class="empty-state">
+                    <i class="fas fa-stethoscope"></i>
+                    <p>Registre ultrassons para ver análise paramétrica</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOOLS (Ferramentas) -->
+    <div class="section" id="sec-tools">
+        <div class="sub-tabs">
+            <button class="sub-tab active" data-tooltab="weightCalc">Peso Ideal</button>
+            <button class="sub-tab" data-tooltab="maternityLeave">Licença</button>
+            <button class="sub-tab" data-tooltab="breastTimer">Amamentação</button>
+            <button class="sub-tab" data-tooltab="bpHistory">Pressão</button>
+            <button class="sub-tab" data-tooltab="music">Músicas</button>
+            <button class="sub-tab" data-tooltab="bumpTimeline">Evolução</button>
+        </div>
+        <div id="toolsContent"></div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="section" id="sec-faq">
+        <div id="faqContent"></div>
+    </div>
+
+    <!-- GLOSSARY -->
+    <div class="section" id="sec-glossary">
+        <div id="glossaryContent"></div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="section" id="sec-reports">
+        <div class="card">
+            <div class="card-title"><i class="fas fa-file-pdf"></i> Gerar Relatórios PDF</div>
+            <p style="font-size:0.85em; color: var(--text-medium); margin-bottom:15px;">
+                Gere relatórios completos com todos os dados da sua gravidez, gráficos comparativos e evolução.
+            </p>
+            <button class="btn btn-primary btn-block" data-pdf="complete" style="margin-bottom:10px">
+                <i class="fas fa-file-pdf"></i> Relatório Completo
+            </button>
+            <button class="btn btn-secondary btn-block" data-pdf="ultrasounds" style="margin-bottom:10px">
+                <i class="fas fa-baby"></i> Relatório de Ultrassons
+            </button>
+            <button class="btn btn-secondary btn-block" data-pdf="appointments" style="margin-bottom:10px">
+                <i class="fas fa-calendar"></i> Relatório de Consultas
+            </button>
+            <button class="btn btn-secondary btn-block" data-pdf="evolution">
+                <i class="fas fa-chart-line"></i> Relatório de Evolução
+            </button>
+        </div>
+        <div class="card">
+            <div class="card-title"><i class="fas fa-print"></i> Outros Formatos</div>
+            <button class="btn btn-secondary btn-block" id="btnPrintSummary" style="margin-bottom:10px">
+                <i class="fas fa-print"></i> Imprimir Resumo Gestacional
+            </button>
+            <button class="btn btn-secondary btn-block" id="btnExportCSV">
+                <i class="fas fa-file-csv"></i> Exportar Dados (CSV)
+            </button>
+        </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="section" id="sec-config">
+        <div class="card">
+            <div class="card-title"><i class="fas fa-cog"></i> Configurações</div>
+            <div class="form-group">
+                <label>Nome do Bebê</label>
+                <input type="text" id="cfgBabyName" value="Hadassa Meira">
+            </div>
+            <div class="form-group">
+                <label>Sexo</label>
+                <select id="cfgBabySex">
+                    <option value="Menina">Menina</option>
+                    <option value="Menino">Menino</option>
+                    <option value="Indefinido">Ainda não sei</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Data da Última Menstruação (DUM)</label>
+                <input type="date" id="cfgDUM">
+            </div>
+            <div class="form-group">
+                <label>Data Prevista do Parto (DPP)</label>
+                <input type="date" id="cfgDPP">
+            </div>
+            <div class="form-group">
+                <label>Base do cálculo gestacional</label>
+                <select id="cfgDateBase">
+                    <option value="dum">Data da Última Menstruação (DUM)</option>
+                    <option value="us">Data da 1ª Ultrassonografia</option>
+                </select>
+            </div>
+            <div class="form-group" id="cfgFirstUSGroup" style="display:none;">
+                <label>Data da 1ª Ultrassonografia</label>
+                <input type="date" id="cfgFirstUSDate">
+            </div>
+            <div class="form-group" id="cfgFirstUSWeeksGroup" style="display:none;">
+                <label>Semanas na 1ª US (informada pelo médico)</label>
+                <input type="number" id="cfgFirstUSWeeks" min="4" max="42" placeholder="Ex: 7">
+            </div>
+            <div class="form-group">
+                <label>Nome da Mãe</label>
+                <input type="text" id="cfgMomName" value="Jessica">
+            </div>
+            <div class="form-group">
+                <label>Médico(a) Responsável</label>
+                <input type="text" id="cfgDoctor">
+            </div>
+            <div class="form-group">
+                <label>Peso Pré-Gestacional (kg)</label>
+                <input type="number" id="cfgPreWeight" step="0.1" min="30" max="200" placeholder="Ex: 60.0">
+            </div>
+            <div class="form-group">
+                <label>Altura (cm)</label>
+                <input type="number" id="cfgHeight" step="1" min="100" max="220" placeholder="Ex: 165">
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="fas fa-database"></i> Gerenciar Dados</div>
+            <button class="btn btn-secondary btn-block" id="btnExport" style="margin-bottom:10px">
+                <i class="fas fa-download"></i> Exportar Dados (JSON)
+            </button>
+            <button class="btn btn-secondary btn-block" id="btnImportTrigger" style="margin-bottom:10px">
+                <i class="fas fa-upload"></i> Importar Dados (JSON)
+            </button>
+            <input type="file" id="importFile" accept=".json" style="display:none">
+            <button class="btn btn-danger btn-block" id="btnClearAll">
+                <i class="fas fa-trash"></i> Limpar Todos os Dados
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== NOVAS SEÇÕES ==================== -->
+
+    <!-- MEU BEBÊ - Conteúdo Semanal + Acompanhamento Gestacional -->
+    <div class="section" id="sec-weekly">
+        <!-- Hero: Week number + progress -->
+        <div class="card weekly-hero-card" id="weeklyHeroCard">
+            <div id="weeklyHeroContent" style="text-align:center;padding:20px 0;">
+                <p style="color:var(--text-light)">Configure a DUM para ver o conteúdo semanal</p>
+            </div>
+        </div>
+
+        <!-- Visual grid cards (like reference app) -->
+        <div class="weekly-grid" id="weeklyGridCards"></div>
+
+        <!-- Detailed content sections -->
+        <div class="card" id="weeklyBabyCard" style="border-left:4px solid var(--pink-400);">
+            <div class="card-title"><i class="fas fa-baby"></i> Seu Bebê esta Semana</div>
+            <div id="weeklyHighlights"></div>
+        </div>
+        <div class="card" id="weeklyBodyCard" style="border-left:4px solid #a855f7;">
+            <div class="card-title" style="color:#a855f7;"><i class="fas fa-female" style="background:#f3e8ff;color:#a855f7;"></i> Seu Corpo</div>
+            <div id="weeklyBody"></div>
+        </div>
+        <div class="card" id="weeklyTipsCard" style="border-left:4px solid #f59e0b;">
+            <div class="card-title" style="color:#f59e0b;"><i class="fas fa-lightbulb" style="background:#fef3c7;color:#f59e0b;"></i> Saiba Disso</div>
+            <div id="weeklyTips"></div>
+        </div>
+        <div class="card" id="weeklyDoCard" style="border-left:4px solid #22c55e;">
+            <div class="card-title" style="color:#22c55e;"><i class="fas fa-check-circle" style="background:#dcfce7;color:#22c55e;"></i> O Que Fazer Agora</div>
+            <div id="weeklyTodo"></div>
+        </div>
+    </div>
+
+    <!-- DIÁRIO DE GRAVIDEZ -->
+    <div class="section" id="sec-diary">
+        <div class="sub-tabs">
+            <button class="sub-tab active" data-diarytab="entries">Diário</button>
+            <button class="sub-tab" data-diarytab="bumpPhotos">Fotos da Barriga</button>
+            <button class="sub-tab" data-diarytab="babyNames">Nomes de Bebê</button>
+            <button class="sub-tab" data-diarytab="letter">Carta ao Bebê</button>
+            <button class="sub-tab" data-diarytab="kicks">Chutes</button>
+            <button class="sub-tab" data-diarytab="contractions">Contrações</button>
+        </div>
+        <button class="btn btn-primary btn-block" id="btnNewDiary">
+            <i class="fas fa-plus"></i> Nova Entrada no Diário
+        </button>
+        <br>
+        <div id="diaryContent"></div>
+    </div>
+
+    <!-- SINTOMAS COMPLETO -->
+    <div class="section" id="sec-symptoms">
+        <div class="sub-tabs">
+            <button class="sub-tab active" data-symptab="register">Registrar</button>
+            <button class="sub-tab" data-symptab="history">Histórico</button>
+        </div>
+        <div id="symptomsFullContent"></div>
+    </div>
+
+    <!-- EXAMES COMPLETO -->
+    <div class="section" id="sec-exams">
+        <div class="sub-tabs">
+            <button class="sub-tab active" data-examtab="all">Todos</button>
+            <button class="sub-tab" data-examtab="blood">Sangue</button>
+            <button class="sub-tab" data-examtab="routine">Rotina</button>
+            <button class="sub-tab" data-examtab="glucose">Glicemia</button>
+            <button class="sub-tab" data-examtab="prescriptions">Receitas</button>
+            <button class="sub-tab" data-examtab="schedule">Agendar</button>
+        </div>
+        <button class="btn btn-primary btn-block" id="btnNewExam">
+            <i class="fas fa-plus"></i> Novo Exame / Documento
+        </button>
+        <br>
+        <div id="examsContent"></div>
+    </div>
+
+    <!-- LISTAS (Enxoval, Mala, Nomes) -->
+    <div class="section" id="sec-lists">
+        <div class="sub-tabs">
+            <button class="sub-tab active" data-listtab="enxoval">Enxoval</button>
+            <button class="sub-tab" data-listtab="malaMae">Mala Mãe</button>
+            <button class="sub-tab" data-listtab="malaBebe">Mala Bebê</button>
+            <button class="sub-tab" data-listtab="doctorQuestions">Perguntas Médico</button>
+        </div>
+        <div id="listsContent"></div>
+    </div>
+
+    <!-- PLANO DE PARTO + INFO -->
+    <div class="section" id="sec-birthplan">
+        <div class="sub-tabs">
+            <button class="sub-tab active" data-birthtab="plan">Meu Plano</button>
+            <button class="sub-tab" data-birthtab="normal">Parto Normal</button>
+            <button class="sub-tab" data-birthtab="cesarean">Cesárea</button>
+        </div>
+        <div id="birthContent"></div>
+    </div>
+
+    <!-- SAÚDE (Exercícios + Nutrição) -->
+    <div class="section" id="sec-health">
+        <div class="sub-tabs">
+            <button class="sub-tab active" data-healthtab="exercises">Exercícios</button>
+            <button class="sub-tab" data-healthtab="nutrition">Nutrição</button>
+            <button class="sub-tab" data-healthtab="diet">Dieta por Fase</button>
+            <button class="sub-tab" data-healthtab="breastfeeding">Amamentação</button>
+        </div>
+        <div id="healthContent"></div>
+    </div>
+
+</div>
+
+<!-- FAB Button for adding -->
+<button class="fab" id="fabBtn" aria-label="Adicionar novo registro">
+    <i class="fas fa-plus"></i>
+</button>
+
+<!-- AI Assistant FAB -->
+<button class="ai-fab" id="aiFab" title="Assistente IA">
+    <i class="fas fa-robot"></i>
+</button>
+
+<!-- AI Overlay -->
+<div class="ai-overlay" id="aiOverlay"></div>
+
+<!-- AI Chat Panel -->
+<div class="ai-panel" id="aiPanel">
+    <div class="ai-panel-header">
+        <h3><i class="fas fa-robot"></i> Assistente Hadassa IA</h3>
+        <button class="ai-close" id="aiCloseBtn"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="ai-quick-actions">
+        <button class="ai-quick-btn" data-ai="dicas">&#x1F31F; Dicas da Semana</button>
+        <button class="ai-quick-btn" data-ai="analise">&#x1F4CA; Analisar Dados</button>
+        <button class="ai-quick-btn" data-ai="sintomas">&#x1FA7A; Sintomas</button>
+        <button class="ai-quick-btn" data-ai="alimentacao">&#x1F34E; Alimentação</button>
+        <button class="ai-quick-btn" data-ai="exercicios">&#x1F9D8; Exercícios</button>
+        <button class="ai-quick-btn" data-ai="exames">&#x1F9EA; Interpretar Exames</button>
+        <button class="ai-quick-btn" data-ai="enxoval">&#x1F6CD;&#xFE0F; Enxoval</button>
+        <button class="ai-quick-btn" data-ai="emocional">&#x1F49C; Bem-estar</button>
+    </div>
+    <div class="ai-messages" id="aiMessages">
+        <div class="ai-welcome">
+            <div class="ai-avatar">&#x1F916;</div>
+            <h4>Olá, Jessica! &#x1F49C;</h4>
+            <p>Sou sua assistente de gravidez com IA!<br>
+            Posso te ajudar com dicas, analisar seus exames,<br>
+            tirar dúvidas sobre sintomas e muito mais.<br><br>
+            Use os botões rápidos acima ou me pergunte qualquer coisa!</p>
+        </div>
+    </div>
+    <div style="padding:4px 15px;font-size:0.6em;color:var(--text-light);text-align:center;border-top:1px solid var(--pink-100);">
+        Este assistente não substitui consultas médicas. Sempre consulte seu obstetra.
+    </div>
+    <div class="ai-input-area">
+        <input type="text" id="aiInput" placeholder="Pergunte sobre sua gravidez...">
+        <button id="aiSendBtn"><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
+<!-- MODALS -->
+
+<!-- Ultrasound Modal -->
+<div class="modal-overlay" id="usModal" role="dialog" aria-modal="true" aria-label="Registro de Ultrassom">
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-baby"></i> Registro de Ultrassom</h3>
+            <button class="modal-close" aria-label="Fechar" data-close="usModal"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="usForm">
+            <input type="hidden" id="usEditId" value="">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Data do Exame *</label>
+                    <input type="date" id="usDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Título/Tipo *</label>
+                    <input type="text" id="usTitle" placeholder="Ex: Morfológica" required maxlength="200">
+                </div>
+            </div>
+            <div class="form-row-3">
+                <div class="form-group">
+                    <label>Semanas</label>
+                    <input type="number" id="usWeeks" min="1" max="42" placeholder="18">
+                </div>
+                <div class="form-group">
+                    <label>Dias</label>
+                    <input type="number" id="usDays" min="0" max="6" placeholder="1">
+                </div>
+                <div class="form-group">
+                    <label>Batimentos (bpm)</label>
+                    <input type="number" id="usHeartbeat" placeholder="150">
+                </div>
+            </div>
+            <div class="form-row-3">
+                <div class="form-group">
+                    <label>Peso (g)</label>
+                    <input type="number" id="usWeight" step="0.1" placeholder="273">
+                </div>
+                <div class="form-group">
+                    <label>Femur (mm)</label>
+                    <input type="number" id="usFemur" step="0.1" placeholder="25.1">
+                </div>
+                <div class="form-group">
+                    <label>CCN (mm)</label>
+                    <input type="number" id="usCCN" step="0.1" placeholder="87.0">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>DBP (mm)</label>
+                    <input type="number" id="usDBP" step="0.1" placeholder="">
+                </div>
+                <div class="form-group">
+                    <label>CA (mm)</label>
+                    <input type="number" id="usCA" step="0.1" placeholder="">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Colo Uterino (mm)</label>
+                    <input type="number" id="usCervix" step="0.1" placeholder="40.0">
+                </div>
+                <div class="form-group">
+                    <label>Placenta</label>
+                    <select id="usPlacenta">
+                        <option value="">Selecionar</option>
+                        <option>Anterior</option>
+                        <option>Posterior</option>
+                        <option>Fúndica</option>
+                        <option>Lateral</option>
+                        <option>Prévia</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Líquido Amniótico (ILA)</label>
+                <input type="text" id="usILA" placeholder="Normal / valor em cm">
+            </div>
+            <div class="form-group">
+                <label>Foto do Ultrassom</label>
+                <input type="file" id="usPhoto" accept="image/*" style="font-size:0.85em;">
+                <div id="usPhotoPreview" style="margin-top:8px;max-height:150px;overflow:hidden;border-radius:10px;"></div>
+            </div>
+            <div class="form-group">
+                <label>Observações</label>
+                <textarea id="usObs" placeholder="Anotações sobre o exame..." maxlength="2000"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-save"></i> Salvar Ultrassom
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Appointment Modal -->
+<div class="modal-overlay" id="appointModal" role="dialog" aria-modal="true" aria-label="Registro de Consulta">
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-calendar-alt"></i> Nova Consulta</h3>
+            <button class="modal-close" aria-label="Fechar" data-close="appointModal"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="appointForm">
+            <input type="hidden" id="appEditId" value="">
+            <div class="form-group">
+                <label>Data da Consulta *</label>
+                <input type="date" id="appDate" required>
+            </div>
+            <div class="form-group">
+                <label>Horário</label>
+                <input type="time" id="appTime">
+            </div>
+            <div class="form-group">
+                <label>Tipo de Consulta *</label>
+                <select id="appType" required>
+                    <option value="">Selecionar</option>
+                    <option>Pre-Natal</option>
+                    <option>Ultrassom</option>
+                    <option>US Morfológica</option>
+                    <option>US Transvaginal</option>
+                    <option>Exame de Sangue</option>
+                    <option>Exame de Urina</option>
+                    <option>Glicemia</option>
+                    <option>Outro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Médico(a)</label>
+                <input type="text" id="appDoctor" placeholder="Nome do médico">
+            </div>
+            <div class="form-group">
+                <label>Local</label>
+                <input type="text" id="appLocation" placeholder="Hospital/Clínica">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Peso da Mãe (kg)</label>
+                    <input type="number" id="appMomWeight" step="0.1" min="30" max="200" placeholder="65.5">
+                </div>
+                <div class="form-group">
+                    <label>Pressão Arterial</label>
+                    <input type="text" id="appBloodPressure" placeholder="Ex: 120/80" maxlength="10">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Observações</label>
+                <textarea id="appNotes" placeholder="Anotações, preparo necessário..." maxlength="2000"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-save"></i> Salvar Consulta
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Note Modal -->
+<div class="modal-overlay" id="noteModal" role="dialog" aria-modal="true" aria-label="Registro de Anotação">
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-book"></i> Nova Anotação</h3>
+            <button class="modal-close" aria-label="Fechar" data-close="noteModal"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="noteForm">
+            <input type="hidden" id="noteEditId" value="">
+            <div class="form-group">
+                <label>Tipo *</label>
+                <select id="noteType" required>
+                    <option value="nota">Nota</option>
+                    <option value="receita">Receita Médica</option>
+                    <option value="sintoma">Sintoma</option>
+                    <option value="medicacao">Medicação</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Título *</label>
+                <input type="text" id="noteTitle" placeholder="Título da anotação" required maxlength="200">
+            </div>
+            <div class="form-group">
+                <label>Data</label>
+                <input type="date" id="noteDate">
+            </div>
+            <div class="form-group">
+                <label>Conteúdo *</label>
+                <textarea id="noteContent" placeholder="Escreva aqui..." required style="min-height:120px" maxlength="5000"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-save"></i> Salvar
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- View Detail Modal -->
+<div class="modal-overlay" id="detailModal" role="dialog" aria-modal="true" aria-label="Detalhes do Ultrassom">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="detailTitle">Detalhes</h3>
+            <button class="modal-close" aria-label="Fechar" data-close="detailModal"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="detailContent"></div>
+    </div>
+</div>
+
+<!-- UX-012: Custom confirm/alert modal -->
+<div class="modal-overlay" id="customConfirmModal" role="dialog" aria-modal="true" aria-label="Confirmação">
+    <div class="modal" style="max-width:380px;text-align:center;">
+        <div style="font-size:2em;margin-bottom:10px;" id="confirmIcon"></div>
+        <h3 id="confirmTitle" style="color:var(--pink-600);margin-bottom:8px;"></h3>
+        <p id="confirmMessage" style="font-size:0.85em;color:var(--text-medium);margin-bottom:20px;"></p>
+        <div style="display:flex;gap:10px;">
+            <button class="btn btn-secondary" id="confirmCancelBtn" style="flex:1;">Cancelar</button>
+            <button class="btn btn-primary" id="confirmOkBtn" style="flex:1;">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- UX-012: Custom alert modal -->
+<div class="modal-overlay" id="customAlertModal" role="dialog" aria-modal="true" aria-label="Aviso">
+    <div class="modal" style="max-width:380px;text-align:center;">
+        <div style="font-size:2em;margin-bottom:10px;" id="alertIcon"></div>
+        <h3 id="alertTitle" style="color:var(--pink-600);margin-bottom:8px;"></h3>
+        <p id="alertMessage" style="font-size:0.85em;color:var(--text-medium);margin-bottom:20px;white-space:pre-line;"></p>
+        <button class="btn btn-primary btn-block" id="alertOkBtn">OK</button>
+    </div>
+</div>
+
+<!-- Diary Entry Modal -->
+<div class="modal-overlay" id="diaryModal" role="dialog" aria-modal="true" aria-label="Nova Entrada no Diário">
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-book"></i> Diário de Gravidez</h3>
+            <button class="modal-close" aria-label="Fechar" data-close="diaryModal"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="diaryForm">
+            <input type="hidden" id="diaryEditId" value="">
+            <div class="form-group">
+                <label>Como você está se sentindo hoje?</label>
+                <div id="diaryMoodPicker" style="display:flex;gap:8px;justify-content:center;margin:10px 0;">
+                    <button type="button" class="mood-btn" data-mood="otima" title="Ótima">&#x1F60D;</button>
+                    <button type="button" class="mood-btn" data-mood="bem" title="Bem">&#x1F60A;</button>
+                    <button type="button" class="mood-btn" data-mood="normal" title="Normal">&#x1F610;</button>
+                    <button type="button" class="mood-btn" data-mood="cansada" title="Cansada">&#x1F62A;</button>
+                    <button type="button" class="mood-btn" data-mood="triste" title="Triste">&#x1F622;</button>
+                    <button type="button" class="mood-btn" data-mood="ansiosa" title="Ansiosa">&#x1F630;</button>
+                </div>
+                <input type="hidden" id="diaryMood" value="">
+            </div>
+            <div class="form-group">
+                <label>Título</label>
+                <input type="text" id="diaryTitle" placeholder="Título da entrada..." maxlength="200">
+            </div>
+            <div class="form-group">
+                <label>Data</label>
+                <input type="date" id="diaryDate">
+            </div>
+            <div class="form-group">
+                <label>Escreva seus pensamentos, sentimentos, o que aconteceu hoje...</label>
+                <textarea id="diaryText" placeholder="Querido diário..." style="min-height:150px;" maxlength="10000"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Foto (barriga, momento especial...)</label>
+                <input type="file" id="diaryPhoto" accept="image/*" style="font-size:0.85em;">
+                <div id="diaryPhotoPreview" style="margin-top:8px;max-height:150px;overflow:hidden;border-radius:10px;"></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-save"></i> Salvar no Diário
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Exam/Document Modal -->
+<div class="modal-overlay" id="examModal" role="dialog" aria-modal="true" aria-label="Novo Exame">
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-medical"></i> Novo Exame / Documento</h3>
+            <button class="modal-close" aria-label="Fechar" data-close="examModal"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="examForm">
+            <input type="hidden" id="examEditId" value="">
+            <div class="form-group">
+                <label>Tipo *</label>
+                <select id="examType" required>
+                    <option value="">Selecionar</option>
+                    <option value="blood">Exame de Sangue</option>
+                    <option value="routine">Exame de Rotina (Urina, etc)</option>
+                    <option value="glucose">Curva Glicêmica / TOTG</option>
+                    <option value="us">Ultrassonografia</option>
+                    <option value="prescription">Receita Médica</option>
+                    <option value="diet">Dieta / Orientação Nutricional</option>
+                    <option value="other">Outro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Título / Descrição *</label>
+                <input type="text" id="examTitle" required placeholder="Ex: Hemograma completo" maxlength="300">
+            </div>
+            <div class="form-group">
+                <label>Data *</label>
+                <input type="date" id="examDate" required>
+            </div>
+            <div class="form-group">
+                <label>Médico(a) solicitante</label>
+                <input type="text" id="examDoctor" placeholder="Nome do médico">
+            </div>
+            <div class="form-group">
+                <label>Laboratório / Local</label>
+                <input type="text" id="examLab" placeholder="Nome do laboratório">
+            </div>
+            <div class="form-group">
+                <label>Resultados / Observações</label>
+                <textarea id="examResults" placeholder="Cole os resultados aqui, ou descreva..." maxlength="5000" style="min-height:100px;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Anexo (foto ou arquivo do exame)</label>
+                <input type="file" id="examFile" accept="image/*,.pdf" style="font-size:0.85em;">
+                <div id="examFilePreview" style="margin-top:8px;max-height:150px;overflow:hidden;border-radius:10px;"></div>
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select id="examStatus">
+                    <option value="done">Realizado</option>
+                    <option value="scheduled">Agendado</option>
+                    <option value="pending">Pendente</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Data agendada (se aplicável)</label>
+                <input type="date" id="examScheduledDate">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-save"></i> Salvar Exame
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- FEAT-001: Onboarding wizard -->
+<div class="modal-overlay" id="onboardingModal" role="dialog" aria-modal="true" aria-label="Boas-vindas">
+    <div class="modal" style="max-width:420px;text-align:center;">
+        <div id="onboardingContent"></div>
+    </div>
+</div>
+
+<!-- FEAT-010: Photo gallery modal -->
+<div class="modal-overlay" id="galleryModal" role="dialog" aria-modal="true" aria-label="Galeria de Fotos">
+    <div class="modal" style="max-width:500px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-images"></i> Galeria de Ultrassons</h3>
+            <button class="modal-close" aria-label="Fechar" data-close="galleryModal"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="galleryContent" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;"></div>
+    </div>
+</div>
+
+<!-- FEAT-010: Fullscreen photo viewer -->
+<div id="photoViewer" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:10000;justify-content:center;align-items:center;">
+    <button id="photoViewerClose" style="position:absolute;top:20px;right:20px;background:none;border:none;color:white;font-size:2em;cursor:pointer;z-index:10001;"><i class="fas fa-times"></i></button>
+    <img id="photoViewerImg" style="max-width:95%;max-height:90%;object-fit:contain;border-radius:8px;">
+</div>
+
+<script src="app.js"></script>
+<script src="features.js" defer></script>
+<script src="content.js" defer></script>
+<script src="extras.js" defer></script>
+
+
+</body>
+</html>

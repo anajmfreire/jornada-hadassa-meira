@@ -1,0 +1,15 @@
+# Chaves de API
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Audits (documentos internos)
+AUDIT_*.md
