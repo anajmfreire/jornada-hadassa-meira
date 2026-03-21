@@ -81,6 +81,28 @@
 
     <!-- DASHBOARD -->
     <div class="section active" id="sec-dashboard">
+
+        <!-- Login/Sync - PRIMEIRO ITEM DO DASHBOARD -->
+        <div id="loginPrompt" class="card" style="text-align:center;background:linear-gradient(135deg,var(--pink-50),var(--purple-100));border:2px solid var(--pink-200);">
+            <div style="font-size:2.5em;margin-bottom:8px;">&#x2601;&#xFE0F;</div>
+            <div style="font-size:1em;font-weight:700;color:var(--pink-600);margin-bottom:6px;">Sincronize seus dados</div>
+            <div style="font-size:0.82em;color:var(--text-medium);margin-bottom:12px;">Entre com Google para salvar na nuvem e acessar do celular e PC</div>
+            <button class="btn btn-primary" id="btnGoogleLogin" style="border-radius:25px;padding:12px 30px;font-size:0.95em;">
+                <i class="fab fa-google"></i> Entrar com Google
+            </button>
+        </div>
+
+        <div id="syncBar" style="display:none;" class="card">
+            <div style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                <img id="syncUserPhoto" src="" style="width:36px;height:36px;border-radius:50%;display:none;border:2px solid var(--pink-300);">
+                <div style="flex:1;">
+                    <div id="syncUserName" style="font-size:0.9em;font-weight:700;color:var(--pink-600);"></div>
+                    <div id="syncStatus" style="font-size:0.72em;color:var(--text-light);"></div>
+                </div>
+                <i class="fas fa-cloud" style="color:var(--pink-400);font-size:1.2em;"></i>
+            </div>
+        </div>
+
         <div class="stats-grid" id="dashStats">
             <div class="stat-card">
                 <div class="stat-icon">&#x1F49C;</div>
@@ -123,27 +145,6 @@
             <button class="menu-card" data-goto="glossary"><span class="menu-icon">&#x1F4DA;</span><span class="menu-label">Glossário</span></button>
             <button class="menu-card" data-goto="params"><span class="menu-icon">&#x1F4CF;</span><span class="menu-label">Parâmetros</span></button>
             <button class="menu-card" data-goto="config"><span class="menu-icon">&#x2699;&#xFE0F;</span><span class="menu-label">Config</span></button>
-        </div>
-
-        <!-- Sync status bar -->
-        <div id="syncBar" style="display:none;" class="card" onclick="toggleSyncPanel()">
-            <div style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-                <img id="syncUserPhoto" src="" style="width:32px;height:32px;border-radius:50%;display:none;">
-                <div style="flex:1;">
-                    <div id="syncUserName" style="font-size:0.85em;font-weight:700;color:var(--pink-600);"></div>
-                    <div id="syncStatus" style="font-size:0.7em;color:var(--text-light);"></div>
-                </div>
-                <i class="fas fa-sync" id="syncIcon" style="color:var(--pink-400);"></i>
-            </div>
-        </div>
-
-        <!-- Login button (when not logged in) -->
-        <div id="loginPrompt" class="card" style="text-align:center;">
-            <div style="font-size:2em;margin-bottom:6px;">&#x1F512;</div>
-            <div style="font-size:0.85em;color:var(--text-medium);margin-bottom:10px;">Faça login para sincronizar seus dados entre dispositivos</div>
-            <button class="btn btn-primary" id="btnGoogleLogin" style="border-radius:25px;padding:10px 24px;">
-                <i class="fab fa-google"></i> Entrar com Google
-            </button>
         </div>
 
         <!-- Welcome message -->
