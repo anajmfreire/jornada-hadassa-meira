@@ -1779,41 +1779,45 @@ var breastfeedingContent = [
                 preview.dataset.photoId = photoId;
                 if (file.type.startsWith('image/')) {
                     renderPhoto(preview, imageData);
-
-                    // OCR: Ask if user wants to extract data
-                    var ocrDiv = document.createElement('div');
-                    ocrDiv.style.cssText = 'margin-top:8px;text-align:center;';
-                    ocrDiv.innerHTML = '<button class="btn btn-secondary btn-small" id="btnOcrExtract" style="border-radius:20px;"><i class="fas fa-magic"></i> Extrair dados da imagem (IA)</button>';
-                    preview.appendChild(ocrDiv);
-
-                    document.getElementById('btnOcrExtract').addEventListener('click', function() {
-                        ocrDiv.innerHTML = '<div style="padding:8px;font-size:0.8em;color:var(--text-light);"><i class="fas fa-spinner fa-spin"></i> Analisando imagem com IA...</div>';
-
-                        extractExamData(imageData).then(function(result) {
-                            if (!result) {
-                                ocrDiv.innerHTML = '<div style="padding:8px;font-size:0.8em;color:#dc2626;">Não foi possível extrair dados. Preencha manualmente.</div>';
-                                return;
-                            }
-
-                            // Fill form fields with extracted data
-                            if (result.type) {
-                                var typeMap = { blood: 'blood', sangue: 'blood', routine: 'routine', rotina: 'routine', glucose: 'glucose', glicemia: 'glucose', us: 'us', ultrassom: 'us', prescription: 'prescription', receita: 'prescription', other: 'other' };
-                                var mappedType = typeMap[result.type] || 'other';
-                                document.getElementById('examType').value = mappedType;
-                            }
-                            if (result.title) document.getElementById('examTitle').value = result.title;
-                            if (result.date) document.getElementById('examDate').value = result.date;
-                            if (result.doctor) document.getElementById('examDoctor').value = result.doctor;
-                            if (result.lab) document.getElementById('examLab').value = result.lab;
-                            if (result.results) document.getElementById('examResults').value = result.results;
-
-                            ocrDiv.innerHTML = '<div style="padding:8px;font-size:0.8em;color:#16a34a;"><i class="fas fa-check"></i> Dados extraídos! Revise e ajuste se necessário.</div>';
-                            showToast('Dados do exame extraídos pela IA!');
-                        });
-                    });
                 } else {
                     preview.innerHTML = '<div style="padding:10px;background:var(--pink-50);border-radius:8px;font-size:0.8em;"><i class="fas fa-file"></i> ' + escapeHtml(file.name) + '</div>';
                 }
+
+                // OCR: Botão de extração para QUALQUER tipo de arquivo
+                var ocrDiv = document.createElement('div');
+                ocrDiv.style.cssText = 'margin-top:8px;text-align:center;';
+                ocrDiv.innerHTML = '<button class="btn btn-secondary" id="btnOcrExtract" style="border-radius:20px;width:100%;padding:10px;"><i class="fas fa-magic"></i> Extrair dados automaticamente (IA)</button>' +
+                    '<div style="font-size:0.7em;color:var(--text-light);margin-top:4px;">A IA analisa o documento e preenche os campos</div>';
+                preview.appendChild(ocrDiv);
+
+                document.getElementById('btnOcrExtract').addEventListener('click', function() {
+                    if (!getGeminiApiKey()) {
+                        showToast('Configure a chave da API Gemini em Configurações', 5000);
+                        return;
+                    }
+
+                    ocrDiv.innerHTML = '<div style="padding:12px;font-size:0.85em;color:var(--pink-600);"><i class="fas fa-spinner fa-spin"></i> Analisando documento com IA... aguarde</div>';
+
+                    extractExamData(imageData).then(function(result) {
+                        if (!result) {
+                            ocrDiv.innerHTML = '<div style="padding:8px;font-size:0.8em;color:#dc2626;"><i class="fas fa-times-circle"></i> Não foi possível extrair dados. Preencha manualmente.</div>';
+                            return;
+                        }
+
+                        if (result.type) {
+                            var typeMap = { blood: 'blood', sangue: 'blood', routine: 'routine', rotina: 'routine', glucose: 'glucose', glicemia: 'glucose', us: 'us', ultrassom: 'us', prescription: 'prescription', receita: 'prescription', other: 'other' };
+                            document.getElementById('examType').value = typeMap[result.type] || 'other';
+                        }
+                        if (result.title) document.getElementById('examTitle').value = result.title;
+                        if (result.date) document.getElementById('examDate').value = result.date;
+                        if (result.doctor) document.getElementById('examDoctor').value = result.doctor;
+                        if (result.lab) document.getElementById('examLab').value = result.lab;
+                        if (result.results) document.getElementById('examResults').value = result.results;
+
+                        ocrDiv.innerHTML = '<div style="padding:8px;font-size:0.8em;color:#16a34a;"><i class="fas fa-check-circle"></i> Dados extraídos! Revise e ajuste se necessário.</div>';
+                        showToast('Dados extraídos com sucesso!');
+                    });
+                });
             }).catch(function() {});
         };
         reader.readAsDataURL(file);

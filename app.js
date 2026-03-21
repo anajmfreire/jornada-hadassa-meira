@@ -2564,6 +2564,13 @@ function saveConfig() {
     appData.config.doctor = document.getElementById('cfgDoctor').value;
     appData.config.preWeight = document.getElementById('cfgPreWeight').value;
     appData.config.height = document.getElementById('cfgHeight').value;
+    // Salvar API key separadamente (nao vai pro Firebase por seguranca)
+    var geminiKeyEl = document.getElementById('cfgGeminiKey');
+    if (geminiKeyEl && geminiKeyEl.value.trim()) {
+        localStorage.setItem('hadassa_gemini_key', geminiKeyEl.value.trim());
+        _geminiApiKey = geminiKeyEl.value.trim();
+    }
+
     appData.config.dateBase = document.getElementById('cfgDateBase').value;
     appData.config.firstUSDate = document.getElementById('cfgFirstUSDate').value;
     appData.config.firstUSWeeks = document.getElementById('cfgFirstUSWeeks').value;
@@ -2600,6 +2607,13 @@ function loadConfig() {
     document.getElementById('cfgDoctor').value = appData.config.doctor || '';
     document.getElementById('cfgPreWeight').value = appData.config.preWeight || '';
     document.getElementById('cfgHeight').value = appData.config.height || '';
+
+    // Gemini API key
+    var geminiKeyEl = document.getElementById('cfgGeminiKey');
+    if (geminiKeyEl) {
+        geminiKeyEl.value = localStorage.getItem('hadassa_gemini_key') || '';
+        if (!_geminiApiKey) _geminiApiKey = localStorage.getItem('hadassa_gemini_key') || '';
+    }
 
     // Date base fields
     var dateBaseEl = document.getElementById('cfgDateBase');
@@ -2858,7 +2872,11 @@ var GEMINI_MODEL = 'gemini-3.1-pro-preview';
 var _geminiApiKey = '';
 
 function loadApiKeyFromEnv() {
-    // Só tenta carregar .env em localhost (não em produção)
+    // Primeiro verificar se tem chave no localStorage
+    var savedKey = localStorage.getItem('hadassa_gemini_key');
+    if (savedKey) { _geminiApiKey = savedKey; return Promise.resolve(); }
+
+    // Só tenta carregar .env em localhost
     if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         return Promise.resolve();
     }
