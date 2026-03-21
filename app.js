@@ -126,6 +126,11 @@ function autoBackup() {
 }
 
 function restoreFromBackup() {
+    // Nao restaurar se dados foram limpos intencionalmente
+    if (localStorage.getItem('hadassa_data_cleared') === 'true') {
+        localStorage.removeItem('hadassa_data_cleared');
+        return;
+    }
     openBackupDB().then(function(db) {
         var tx = db.transaction(BACKUP_STORE, 'readonly');
         var store = tx.objectStore(BACKUP_STORE);
@@ -2717,35 +2722,51 @@ function clearAllData() {
     }).then(function(confirmed) {
         if (!confirmed) return;
 
-        // Limpar TUDO do localStorage
+        // PASSO 1: Marcar que dados foram limpos intencionalmente
+        localStorage.setItem('hadassa_data_cleared', 'true');
+        // Impedir que sample data seja reinserido
+        localStorage.setItem('hadassa_sample_loaded', 'true');
+
+        // PASSO 2: Limpar Firebase PRIMEIRO (antes de limpar local)
+        try {
+            var fbUser = window._firebaseUser ? window._firebaseUser() : null;
+            var fbDB = window._firebaseDB;
+            if (fbUser && fbDB) {
+                fbDB.ref('users/' + fbUser.uid + '/data').remove();
+                console.log('Firebase data removed');
+            }
+        } catch(e) { console.error('Firebase clear error:', e); }
+
+        // PASSO 3: Limpar TUDO do localStorage (exceto flags de controle)
+        var keysToKeep = ['hadassa_sample_loaded', 'hadassa_data_cleared', 'hadassa_theme', 'hadassa_onboarding_done', 'hadassa_disclaimer_shown'];
         var keysToRemove = [];
         for (var i = 0; i < localStorage.length; i++) {
             var key = localStorage.key(i);
-            if (key && key.startsWith('hadassa')) {
+            if (key && (key.startsWith('hadassa') || key === STORAGE_KEY) && keysToKeep.indexOf(key) === -1) {
                 keysToRemove.push(key);
             }
         }
         keysToRemove.forEach(function(key) { localStorage.removeItem(key); });
         localStorage.removeItem(STORAGE_KEY);
 
-        // Limpar backup do IndexedDB
+        // PASSO 4: Limpar IndexedDB
         try {
             indexedDB.deleteDatabase(BACKUP_DB);
             indexedDB.deleteDatabase(PHOTO_DB_NAME);
         } catch(e) {}
 
-        // Limpar Firebase (se logado)
-        try {
-            var fbUser = window._firebaseUser ? window._firebaseUser() : null;
-            var fbDB = window._firebaseDB;
-            if (fbUser && fbDB) { fbDB.ref('users/' + fbUser.uid).remove(); }
-        } catch(e) {}
-
-        // Resetar appData
+        // PASSO 5: Resetar appData com dados vazios
         appData = getDefaultData();
+        // Salvar dados vazios no localStorage
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+
+        // PASSO 6: Atualizar tela
         loadConfig();
         renderAll();
         showToast('Todos os dados foram apagados!');
+
+        // PASSO 7: Recarregar página após 1s para garantir limpeza total
+        setTimeout(function() { location.reload(); }, 1500);
     });
 }
 
