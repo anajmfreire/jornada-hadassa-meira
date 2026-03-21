@@ -2559,6 +2559,28 @@ function saveConfig() {
     appData.config.doctor = document.getElementById('cfgDoctor').value;
     appData.config.preWeight = document.getElementById('cfgPreWeight').value;
     appData.config.height = document.getElementById('cfgHeight').value;
+    appData.config.dateBase = document.getElementById('cfgDateBase').value;
+    appData.config.firstUSDate = document.getElementById('cfgFirstUSDate').value;
+    appData.config.firstUSWeeks = document.getElementById('cfgFirstUSWeeks').value;
+    appData.config.firstUSDays = document.getElementById('cfgFirstUSDays').value || '0';
+
+    // Se usar data da 1ª US, recalcular DUM e DPP
+    if (appData.config.dateBase === 'us' && appData.config.firstUSDate && appData.config.firstUSWeeks) {
+        var usDate = new Date(appData.config.firstUSDate + 'T12:00:00');
+        var usWeeks = parseInt(appData.config.firstUSWeeks) || 0;
+        var usDays = parseInt(appData.config.firstUSDays) || 0;
+        var totalDaysAtUS = (usWeeks * 7) + usDays;
+        // DUM calculada = data da US - dias gestacionais na US
+        var calculatedDUM = new Date(usDate.getTime() - (totalDaysAtUS * 86400000));
+        appData.config.dum = calculatedDUM.toISOString().split('T')[0];
+        // DPP = DUM + 280 dias
+        var calculatedDPP = new Date(calculatedDUM.getTime() + (280 * 86400000));
+        appData.config.dpp = calculatedDPP.toISOString().split('T')[0];
+        // Atualizar campos visuais
+        document.getElementById('cfgDUM').value = appData.config.dum;
+        document.getElementById('cfgDPP').value = appData.config.dpp;
+    }
+
     saveData(appData);
     updateWeekBanner();
     applyThemeBySex();
@@ -2573,6 +2595,21 @@ function loadConfig() {
     document.getElementById('cfgDoctor').value = appData.config.doctor || '';
     document.getElementById('cfgPreWeight').value = appData.config.preWeight || '';
     document.getElementById('cfgHeight').value = appData.config.height || '';
+
+    // Date base fields
+    var dateBaseEl = document.getElementById('cfgDateBase');
+    if (dateBaseEl) {
+        dateBaseEl.value = appData.config.dateBase || 'dum';
+        var showUS = dateBaseEl.value === 'us';
+        document.getElementById('cfgFirstUSGroup').style.display = showUS ? 'block' : 'none';
+        document.getElementById('cfgFirstUSWeeksGroup').style.display = showUS ? 'block' : 'none';
+    }
+    var firstUSDateEl = document.getElementById('cfgFirstUSDate');
+    if (firstUSDateEl) firstUSDateEl.value = appData.config.firstUSDate || '';
+    var firstUSWeeksEl = document.getElementById('cfgFirstUSWeeks');
+    if (firstUSWeeksEl) firstUSWeeksEl.value = appData.config.firstUSWeeks || '';
+    var firstUSDaysEl = document.getElementById('cfgFirstUSDays');
+    if (firstUSDaysEl) firstUSDaysEl.value = appData.config.firstUSDays || '';
 }
 
 // ============ DATA IMPORT/EXPORT ============
@@ -2615,7 +2652,7 @@ function importData(event) {
             if (!Array.isArray(imported.appointments)) throw new Error('Campo "appointments" ausente ou inválido.');
             if (!Array.isArray(imported.notes)) throw new Error('Campo "notes" ausente ou inválido.');
 
-            var allowedConfigKeys = ['babyName', 'babySex', 'dum', 'dpp', 'momName', 'doctor', 'preWeight', 'height'];
+            var allowedConfigKeys = ['babyName', 'babySex', 'dum', 'dpp', 'momName', 'doctor', 'preWeight', 'height', 'dateBase', 'firstUSDate', 'firstUSWeeks', 'firstUSDays'];
             Object.keys(imported.config).forEach(function(key) {
                 if (!allowedConfigKeys.includes(key)) throw new Error('Campo desconhecido em config: ' + key);
                 if (typeof imported.config[key] !== 'string') throw new Error('config.' + key + ' deve ser string.');
@@ -3274,7 +3311,7 @@ function sendAIMessage() {
     document.getElementById('usSearchInput').addEventListener('input', function() { renderUltrasounds(); });
 
     // Config inputs
-    ['cfgBabyName', 'cfgBabySex', 'cfgDUM', 'cfgDPP', 'cfgMomName', 'cfgDoctor', 'cfgPreWeight', 'cfgHeight'].forEach(function(id) {
+    ['cfgBabyName', 'cfgBabySex', 'cfgDUM', 'cfgDPP', 'cfgMomName', 'cfgDoctor', 'cfgPreWeight', 'cfgHeight', 'cfgDateBase', 'cfgFirstUSDate', 'cfgFirstUSWeeks', 'cfgFirstUSDays'].forEach(function(id) {
         document.getElementById(id).addEventListener('change', saveConfig);
     });
 
