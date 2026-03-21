@@ -2725,11 +2725,34 @@ function clearAllData() {
         return showCustomConfirm('Última Chance', 'Confirma que deseja apagar TUDO?', '\u{1F6A8}');
     }).then(function(confirmed) {
         if (!confirmed) return;
+
+        // Limpar TUDO do localStorage
+        var keysToRemove = [];
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key && key.startsWith('hadassa')) {
+                keysToRemove.push(key);
+            }
+        }
+        keysToRemove.forEach(function(key) { localStorage.removeItem(key); });
         localStorage.removeItem(STORAGE_KEY);
-        appData = loadData();
+
+        // Limpar backup do IndexedDB
+        try {
+            indexedDB.deleteDatabase(BACKUP_DB);
+            indexedDB.deleteDatabase(PHOTO_DB_NAME);
+        } catch(e) {}
+
+        // Limpar Firebase (se logado)
+        if (typeof currentUser !== 'undefined' && currentUser && typeof db !== 'undefined' && db) {
+            try { db.ref('users/' + currentUser.uid).remove(); } catch(e) {}
+        }
+
+        // Resetar appData
+        appData = getDefaultData();
         loadConfig();
         renderAll();
-        showToast('Todos os dados foram apagados.');
+        showToast('Todos os dados foram apagados!');
     });
 }
 
