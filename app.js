@@ -2626,17 +2626,8 @@ function exportData() {
 }
 
 function checkBackupReminder() {
-    var lastBackup = localStorage.getItem('hadassa_last_backup');
-    var BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
-    var hasData = appData.ultrasounds.length > 0 || appData.appointments.length > 0 || appData.notes.length > 0;
-    if (!hasData) return;
-    if (!lastBackup || (Date.now() - parseInt(lastBackup)) > BACKUP_INTERVAL_MS) {
-        setTimeout(function() {
-            if (confirm('Faz mais de 7 dias desde seu último backup.\nDados no navegador podem ser perdidos a qualquer momento.\n\nDeseja exportar um backup agora?')) {
-                exportData();
-            }
-        }, 2000);
-    }
+    // Backup automático já é feito via IndexedDB e Firebase
+    // Não incomodar o usuário com popups
 }
 
 function importData(event) {
