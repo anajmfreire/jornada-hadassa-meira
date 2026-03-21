@@ -71,7 +71,12 @@ function migrateData(data) {
  */
 function loadData() {
     var raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return getDefaultData();
+    if (!raw) {
+        // Tentar recuperar do backup no IndexedDB
+        Logger.info('Nenhum dado no localStorage. Verificando backup...');
+        restoreFromBackup();
+        return getDefaultData();
+    }
 
     try {
         var data = JSON.parse(raw);
@@ -79,11 +84,81 @@ function loadData() {
             return migrateData(data);
         }
     } catch (e) {
-        // Pode ser dado criptografado antigo (pre-V1.2) — nao conseguimos ler sem
-        // a infra de criptografia que foi removida. Log e retorna default.
-        Logger.warn('Dados no localStorage nao sao JSON valido. Pode ser formato criptografado antigo. Usando dados padrao.');
+        Logger.warn('Dados corrompidos no localStorage. Tentando backup...');
+        restoreFromBackup();
     }
     return getDefaultData();
+}
+
+// Backup automatico no IndexedDB (mais resistente que localStorage)
+var BACKUP_DB = 'hadassa_backup_db';
+var BACKUP_STORE = 'backup';
+
+function openBackupDB() {
+    return new Promise(function(resolve, reject) {
+        var req = indexedDB.open(BACKUP_DB, 1);
+        req.onupgradeneeded = function(e) { e.target.result.createObjectStore(BACKUP_STORE); };
+        req.onsuccess = function(e) { resolve(e.target.result); };
+        req.onerror = function(e) { reject(e.target.error); };
+    });
+}
+
+function autoBackup() {
+    if (!appData || !appData.config) return;
+    openBackupDB().then(function(db) {
+        var tx = db.transaction(BACKUP_STORE, 'readwrite');
+        tx.objectStore(BACKUP_STORE).put(JSON.stringify(appData), 'main_data');
+        tx.objectStore(BACKUP_STORE).put(new Date().toISOString(), 'backup_date');
+        // Backup de todos os localStorage extras
+        var extras = {};
+        ['hadassa_diary', 'hadassa_symptoms', 'hadassa_exams', 'hadassa_baby_names',
+         'hadassa_kick_history', 'hadassa_contractions', 'hadassa_exam_checklist',
+         'hadassa_bp_log', 'hadassa_bf_history', 'hadassa_custom_symptoms',
+         'hadassa_list_enxoval', 'hadassa_list_malaMae', 'hadassa_list_malaBebe',
+         'hadassa_list_doctorQuestions', 'hadassa_list_birthPlan',
+         'hadassa_weekly_todos', 'hadassa_letter_to_baby'].forEach(function(key) {
+            var val = localStorage.getItem(key);
+            if (val) extras[key] = val;
+        });
+        tx.objectStore(BACKUP_STORE).put(JSON.stringify(extras), 'extras_data');
+        Logger.debug('Backup automatico salvo');
+    }).catch(function() {});
+}
+
+function restoreFromBackup() {
+    openBackupDB().then(function(db) {
+        var tx = db.transaction(BACKUP_STORE, 'readonly');
+        var store = tx.objectStore(BACKUP_STORE);
+        var reqMain = store.get('main_data');
+        var reqExtras = store.get('extras_data');
+
+        reqMain.onsuccess = function() {
+            if (reqMain.result) {
+                try {
+                    var data = JSON.parse(reqMain.result);
+                    if (data && data.config) {
+                        localStorage.setItem(STORAGE_KEY, reqMain.result);
+                        Logger.info('Dados restaurados do backup!');
+                        // Reload para aplicar
+                        location.reload();
+                    }
+                } catch(e) {}
+            }
+        };
+
+        reqExtras.onsuccess = function() {
+            if (reqExtras.result) {
+                try {
+                    var extras = JSON.parse(reqExtras.result);
+                    Object.keys(extras).forEach(function(key) {
+                        if (!localStorage.getItem(key)) {
+                            localStorage.setItem(key, extras[key]);
+                        }
+                    });
+                } catch(e) {}
+            }
+        };
+    }).catch(function() {});
 }
 
 /**
@@ -95,6 +170,8 @@ function saveData(data) {
     data.version = DATA_VERSION;
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        // Backup automatico a cada save
+        autoBackup();
     } catch (err) {
         if (err.name === 'QuotaExceededError') {
             Logger.error('localStorage cheio!');
@@ -2974,6 +3051,22 @@ function sendAIMessage() {
     loadConfig();
     applyThemeBySex();
     renderAll();
+
+    // Hide splash screen
+    var splash = document.getElementById('splashScreen');
+    if (splash) {
+        var splashName = document.getElementById('splashName');
+        if (splashName && appData.config.babyName) {
+            splashName.textContent = appData.config.babyName;
+        }
+        setTimeout(function() {
+            splash.style.opacity = '0';
+            setTimeout(function() { splash.style.display = 'none'; }, 500);
+        }, 1200);
+    }
+
+    // Auto backup a cada 5 minutos
+    setInterval(autoBackup, 5 * 60 * 1000);
     checkBackupReminder();
     handleHashChange();
 
