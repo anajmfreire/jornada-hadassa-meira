@@ -1,252 +1,294 @@
 // ================================================================
-// FIREBASE-SYNC.JS - Sincronização em tempo real com Firebase
+// FIREBASE-SYNC.JS - Sincronizacao em tempo real com Firebase
 // ================================================================
 
-// Firebase config
-var firebaseConfig = {
-    apiKey: "AIzaSyAlMmkKtN414ysINl99oWce121XG11dFnk",
-    authDomain: "jornada-hadassa-meira.firebaseapp.com",
-    databaseURL: "https://jornada-hadassa-meira-default-rtdb.firebaseio.com",
-    projectId: "jornada-hadassa-meira",
-    storageBucket: "jornada-hadassa-meira.firebasestorage.app",
-    messagingSenderId: "277029078418",
-    appId: "1:277029078418:web:c4a2e965434273b06ced4b"
-};
-
-// Initialize Firebase
-var auth, db;
-try {
-    firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth();
-    db = firebase.database();
-} catch(e) {
-    console.error('Firebase init error:', e);
-}
-
-var currentUser = null;
-var syncEnabled = false;
-var isSyncing = false;
-
-// ============ AUTH ============
-function loginWithGoogle() {
-    var provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch(function(error) {
-        Logger.error('Login error:', error.message);
-        // Fallback to redirect for mobile
-        if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
-            auth.signInWithRedirect(provider);
+(function() {
+    // Aguardar Firebase SDK carregar
+    function waitForFirebase(callback) {
+        if (typeof firebase !== 'undefined' && firebase.app) {
+            callback();
         } else {
-            showToast('Erro ao fazer login: ' + error.message, 5000);
+            console.log('Aguardando Firebase SDK...');
+            setTimeout(function() { waitForFirebase(callback); }, 500);
         }
-    });
-}
-
-function logout() {
-    auth.signOut().then(function() {
-        currentUser = null;
-        syncEnabled = false;
-        updateSyncUI();
-        showToast('Desconectado!');
-    });
-}
-
-// Listen for auth state changes
-if (!auth) { console.error('Firebase auth not available'); }
-auth && auth.onAuthStateChanged(function(user) {
-    currentUser = user;
-    if (user) {
-        syncEnabled = true;
-        updateSyncUI();
-        // Initial sync: download from cloud
-        syncFromCloud();
-        // Listen for realtime changes
-        listenForCloudChanges();
-        Logger.info('Logged in as:', user.displayName);
-    } else {
-        syncEnabled = false;
-        updateSyncUI();
     }
-});
 
-// ============ SYNC UI ============
-function updateSyncUI() {
-    var loginPrompt = document.getElementById('loginPrompt');
-    var syncBar = document.getElementById('syncBar');
+    // Aguardar appData estar disponivel
+    function waitForApp(callback) {
+        if (typeof appData !== 'undefined' && appData !== null && typeof saveData === 'function') {
+            callback();
+        } else {
+            setTimeout(function() { waitForApp(callback); }, 300);
+        }
+    }
 
-    if (currentUser) {
-        if (loginPrompt) loginPrompt.style.display = 'none';
-        if (syncBar) {
-            syncBar.style.display = 'block';
-            var photo = document.getElementById('syncUserPhoto');
-            var name = document.getElementById('syncUserName');
-            var status = document.getElementById('syncStatus');
-            if (photo && currentUser.photoURL) {
-                photo.src = currentUser.photoURL;
-                photo.style.display = 'block';
+    waitForFirebase(function() {
+        waitForApp(function() {
+            initializeFirebaseSync();
+        });
+    });
+
+    function initializeFirebaseSync() {
+        console.log('Inicializando Firebase Sync...');
+
+        // Firebase config
+        var firebaseConfig = {
+            apiKey: "AIzaSyAlMmkKtN414ysINl99oWce121XG11dFnk",
+            authDomain: "jornada-hadassa-meira.firebaseapp.com",
+            databaseURL: "https://jornada-hadassa-meira-default-rtdb.firebaseio.com",
+            projectId: "jornada-hadassa-meira",
+            storageBucket: "jornada-hadassa-meira.firebasestorage.app",
+            messagingSenderId: "277029078418",
+            appId: "1:277029078418:web:c4a2e965434273b06ced4b"
+        };
+
+        // Initialize Firebase (only once)
+        var app, auth, db;
+        try {
+            if (!firebase.apps.length) {
+                app = firebase.initializeApp(firebaseConfig);
+            } else {
+                app = firebase.apps[0];
             }
-            if (name) name.textContent = currentUser.displayName || currentUser.email;
-            if (status) status.textContent = 'Sincronizado ✓';
-        }
-    } else {
-        if (loginPrompt) loginPrompt.style.display = 'block';
-        if (syncBar) syncBar.style.display = 'none';
-    }
-}
-
-function setSyncStatus(text) {
-    var status = document.getElementById('syncStatus');
-    if (status) status.textContent = text;
-}
-
-function toggleSyncPanel() {
-    if (!currentUser) return;
-    showCustomConfirm(
-        'Sincronização',
-        'Seus dados estão sincronizados com a nuvem.\n\nDeseja sair da conta?',
-        '☁️'
-    ).then(function(ok) {
-        if (ok) logout();
-    });
-}
-
-// ============ SYNC TO CLOUD ============
-function syncToCloud() {
-    if (!currentUser || !syncEnabled || isSyncing) return;
-    isSyncing = true;
-    setSyncStatus('Salvando na nuvem...');
-
-    var syncData = {
-        appData: appData,
-        extras: {},
-        lastSync: new Date().toISOString(),
-        deviceName: navigator.userAgent.indexOf('Mobile') > -1 ? 'Celular' : 'Computador'
-    };
-
-    // Collect all localStorage extras
-    var extraKeys = [
-        'hadassa_diary', 'hadassa_symptoms', 'hadassa_exams', 'hadassa_baby_names',
-        'hadassa_kick_history', 'hadassa_contractions', 'hadassa_exam_checklist',
-        'hadassa_bp_log', 'hadassa_bf_history', 'hadassa_custom_symptoms',
-        'hadassa_list_enxoval', 'hadassa_list_malaMae', 'hadassa_list_malaBebe',
-        'hadassa_list_doctorQuestions', 'hadassa_list_birthPlan',
-        'hadassa_weekly_todos', 'hadassa_letter_to_baby', 'hadassa_hydration',
-        'hadassa_sample_loaded', 'hadassa_onboarding_done', 'hadassa_disclaimer_shown',
-        'hadassa_theme', 'hadassa_last_backup', 'hadassa_motivation_date'
-    ];
-
-    extraKeys.forEach(function(key) {
-        var val = localStorage.getItem(key);
-        if (val) syncData.extras[key] = val;
-    });
-
-    db.ref('users/' + currentUser.uid + '/data').set(syncData).then(function() {
-        setSyncStatus('Sincronizado ✓ ' + new Date().toLocaleTimeString());
-        isSyncing = false;
-        Logger.debug('Sync to cloud OK');
-    }).catch(function(error) {
-        setSyncStatus('Erro ao sincronizar');
-        isSyncing = false;
-        Logger.error('Sync error:', error);
-    });
-}
-
-// ============ SYNC FROM CLOUD ============
-function syncFromCloud() {
-    if (!currentUser) return;
-    setSyncStatus('Baixando dados...');
-
-    db.ref('users/' + currentUser.uid + '/data').once('value').then(function(snapshot) {
-        var cloudData = snapshot.val();
-        if (!cloudData || !cloudData.appData) {
-            // No data in cloud — upload local data
-            setSyncStatus('Enviando dados para a nuvem...');
-            syncToCloud();
+            auth = firebase.auth();
+            db = firebase.database();
+            console.log('Firebase inicializado OK');
+        } catch(e) {
+            console.error('Firebase init error:', e);
             return;
         }
 
-        // Compare timestamps
-        var localTimestamp = localStorage.getItem('hadassa_last_sync') || '0';
-        var cloudTimestamp = cloudData.lastSync || '0';
+        var currentUser = null;
+        var syncEnabled = false;
+        var isSyncing = false;
+        var syncTimeout = null;
 
-        if (cloudTimestamp > localTimestamp) {
-            // Cloud is newer — download
-            appData = cloudData.appData;
-            saveData(appData);
+        // Expose for clearAllData
+        window._firebaseDB = db;
+        window._firebaseUser = function() { return currentUser; };
 
-            // Restore extras
-            if (cloudData.extras) {
-                Object.keys(cloudData.extras).forEach(function(key) {
-                    localStorage.setItem(key, cloudData.extras[key]);
-                });
+        // ============ AUTH ============
+        function loginWithGoogle() {
+            console.log('Tentando login com Google...');
+            var provider = new firebase.auth.GoogleAuthProvider();
+
+            // Tentar popup primeiro, fallback para redirect
+            auth.signInWithPopup(provider).then(function(result) {
+                console.log('Login OK:', result.user.displayName);
+                showToast('Bem-vinda, ' + result.user.displayName + '!');
+            }).catch(function(error) {
+                console.error('Login popup error:', error.code, error.message);
+                if (error.code === 'auth/popup-blocked' ||
+                    error.code === 'auth/popup-closed-by-user' ||
+                    error.code === 'auth/cancelled-popup-request') {
+                    // Fallback to redirect (melhor para mobile)
+                    auth.signInWithRedirect(provider);
+                } else {
+                    showToast('Erro no login: ' + error.message, 5000);
+                }
+            });
+        }
+
+        function logout() {
+            auth.signOut().then(function() {
+                currentUser = null;
+                syncEnabled = false;
+                updateSyncUI();
+                showToast('Desconectado!');
+            });
+        }
+
+        // ============ SYNC UI ============
+        function updateSyncUI() {
+            var loginPrompt = document.getElementById('loginPrompt');
+            var syncBar = document.getElementById('syncBar');
+
+            if (currentUser) {
+                if (loginPrompt) loginPrompt.style.display = 'none';
+                if (syncBar) {
+                    syncBar.style.display = 'block';
+                    var photo = document.getElementById('syncUserPhoto');
+                    var name = document.getElementById('syncUserName');
+                    var status = document.getElementById('syncStatus');
+                    if (photo && currentUser.photoURL) {
+                        photo.src = currentUser.photoURL;
+                        photo.style.display = 'block';
+                    }
+                    if (name) name.textContent = currentUser.displayName || currentUser.email;
+                    if (status) status.textContent = 'Sincronizado \u2713';
+                }
+            } else {
+                if (loginPrompt) loginPrompt.style.display = 'block';
+                if (syncBar) syncBar.style.display = 'none';
             }
+        }
 
-            localStorage.setItem('hadassa_last_sync', cloudData.lastSync);
-            loadConfig();
-            applyThemeBySex();
-            renderAll();
-            setSyncStatus('Sincronizado ✓ (dados da nuvem)');
-            Logger.info('Downloaded data from cloud');
+        function setSyncStatus(text) {
+            var el = document.getElementById('syncStatus');
+            if (el) el.textContent = text;
+        }
+
+        // ============ SYNC TO CLOUD ============
+        function syncToCloud() {
+            if (!currentUser || !syncEnabled || isSyncing || !db) return;
+            isSyncing = true;
+            setSyncStatus('Salvando...');
+
+            var syncData = {
+                appData: appData,
+                extras: {},
+                lastSync: new Date().toISOString(),
+                deviceName: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'Celular' : 'PC'
+            };
+
+            var extraKeys = [
+                'hadassa_diary', 'hadassa_symptoms', 'hadassa_exams', 'hadassa_baby_names',
+                'hadassa_kick_history', 'hadassa_contractions', 'hadassa_exam_checklist',
+                'hadassa_bp_log', 'hadassa_bf_history', 'hadassa_custom_symptoms',
+                'hadassa_list_enxoval', 'hadassa_list_malaMae', 'hadassa_list_malaBebe',
+                'hadassa_list_doctorQuestions', 'hadassa_list_birthPlan',
+                'hadassa_weekly_todos', 'hadassa_letter_to_baby', 'hadassa_hydration',
+                'hadassa_sample_loaded', 'hadassa_onboarding_done', 'hadassa_disclaimer_shown',
+                'hadassa_theme', 'hadassa_motivation_date'
+            ];
+
+            extraKeys.forEach(function(key) {
+                var val = localStorage.getItem(key);
+                if (val) syncData.extras[key] = val;
+            });
+
+            db.ref('users/' + currentUser.uid + '/data').set(syncData).then(function() {
+                localStorage.setItem('hadassa_last_sync', syncData.lastSync);
+                setSyncStatus('Sincronizado \u2713 ' + new Date().toLocaleTimeString());
+                isSyncing = false;
+            }).catch(function(error) {
+                setSyncStatus('Erro ao sincronizar');
+                isSyncing = false;
+                console.error('Sync error:', error);
+            });
+        }
+
+        // ============ SYNC FROM CLOUD ============
+        function syncFromCloud() {
+            if (!currentUser || !db) return;
+            setSyncStatus('Baixando dados...');
+
+            db.ref('users/' + currentUser.uid + '/data').once('value').then(function(snapshot) {
+                var cloudData = snapshot.val();
+                if (!cloudData || !cloudData.appData) {
+                    setSyncStatus('Enviando dados...');
+                    syncToCloud();
+                    return;
+                }
+
+                var localTimestamp = localStorage.getItem('hadassa_last_sync') || '0';
+                var cloudTimestamp = cloudData.lastSync || '0';
+
+                if (cloudTimestamp > localTimestamp) {
+                    appData = cloudData.appData;
+
+                    // Salvar sem trigger sync loop
+                    var origSave = window._origSaveData || saveData;
+                    try { origSave(appData); } catch(e) {}
+
+                    if (cloudData.extras) {
+                        Object.keys(cloudData.extras).forEach(function(key) {
+                            localStorage.setItem(key, cloudData.extras[key]);
+                        });
+                    }
+
+                    localStorage.setItem('hadassa_last_sync', cloudData.lastSync);
+                    loadConfig();
+                    if (typeof applyThemeBySex === 'function') applyThemeBySex();
+                    renderAll();
+                    setSyncStatus('Sincronizado \u2713');
+                } else {
+                    syncToCloud();
+                }
+            }).catch(function(error) {
+                setSyncStatus('Erro');
+                console.error('Download error:', error);
+            });
+        }
+
+        // ============ REALTIME LISTENER ============
+        function listenForCloudChanges() {
+            if (!currentUser || !db) return;
+            db.ref('users/' + currentUser.uid + '/data/lastSync').on('value', function(snapshot) {
+                var cloudSync = snapshot.val();
+                var localSync = localStorage.getItem('hadassa_last_sync') || '0';
+                if (cloudSync && cloudSync > localSync && !isSyncing) {
+                    syncFromCloud();
+                }
+            });
+        }
+
+        // ============ AUTH STATE LISTENER ============
+        auth.onAuthStateChanged(function(user) {
+            console.log('Auth state changed:', user ? user.displayName : 'no user');
+            currentUser = user;
+            if (user) {
+                syncEnabled = true;
+                updateSyncUI();
+                syncFromCloud();
+                listenForCloudChanges();
+            } else {
+                syncEnabled = false;
+                updateSyncUI();
+            }
+        });
+
+        // Check for redirect result (mobile login)
+        auth.getRedirectResult().then(function(result) {
+            if (result && result.user) {
+                console.log('Redirect login OK:', result.user.displayName);
+            }
+        }).catch(function(error) {
+            console.error('Redirect result error:', error);
+        });
+
+        // ============ OVERRIDE SAVE ============
+        window._origSaveData = saveData;
+        saveData = function(data) {
+            window._origSaveData(data);
+            if (syncEnabled && currentUser) {
+                clearTimeout(syncTimeout);
+                syncTimeout = setTimeout(syncToCloud, 2000);
+            }
+        };
+
+        // Periodic sync
+        setInterval(function() {
+            if (syncEnabled && currentUser && !isSyncing) {
+                syncToCloud();
+            }
+        }, 60000);
+
+        // ============ EVENT LISTENERS ============
+        var loginBtn = document.getElementById('btnGoogleLogin');
+        if (loginBtn) {
+            loginBtn.addEventListener('click', function() {
+                console.log('Botao login clicado');
+                loginWithGoogle();
+            });
+            console.log('Botao login configurado OK');
         } else {
-            // Local is newer or same — upload
-            syncToCloud();
+            console.error('Botao btnGoogleLogin NAO encontrado!');
         }
-    }).catch(function(error) {
-        setSyncStatus('Erro ao baixar dados');
-        Logger.error('Download error:', error);
-    });
-}
 
-// ============ REALTIME LISTENER ============
-function listenForCloudChanges() {
-    if (!currentUser) return;
-
-    db.ref('users/' + currentUser.uid + '/data/lastSync').on('value', function(snapshot) {
-        var cloudSync = snapshot.val();
-        var localSync = localStorage.getItem('hadassa_last_sync') || '0';
-
-        if (cloudSync && cloudSync > localSync && !isSyncing) {
-            // Another device updated — pull changes
-            Logger.info('Detected cloud update, syncing...');
-            syncFromCloud();
+        // Sync bar click = logout
+        var syncBar = document.getElementById('syncBar');
+        if (syncBar) {
+            syncBar.addEventListener('click', function() {
+                if (!currentUser) return;
+                showCustomConfirm('Sincronizacao', 'Deseja sair da conta?', '\u2601\uFE0F').then(function(ok) {
+                    if (ok) logout();
+                });
+            });
         }
-    });
-}
 
-// ============ OVERRIDE SAVE TO AUTO-SYNC ============
-var _originalSaveData = saveData;
-saveData = function(data) {
-    _originalSaveData(data);
-    // Sync to cloud after saving locally (debounced)
-    if (syncEnabled && currentUser) {
-        clearTimeout(saveData._syncTimeout);
-        saveData._syncTimeout = setTimeout(syncToCloud, 2000); // Wait 2s to batch saves
+        // Update UI now
+        updateSyncUI();
+        console.log('Firebase Sync pronto!');
     }
-};
-saveData._syncTimeout = null;
-
-// Sync extras periodically (every 30s if logged in)
-setInterval(function() {
-    if (syncEnabled && currentUser && !isSyncing) {
-        syncToCloud();
-    }
-}, 30000);
-
-// ============ INIT ============
-(function initFirebase() {
-    // Wait for DOM and appData
-    if (typeof appData === 'undefined' || appData === null) {
-        setTimeout(initFirebase, 300);
-        return;
-    }
-
-    // Login button
-    var loginBtn = document.getElementById('btnGoogleLogin');
-    if (loginBtn) {
-        loginBtn.addEventListener('click', loginWithGoogle);
-    }
-
-    // Update UI
-    updateSyncUI();
-
-    Logger.info('Firebase sync initialized');
 })();

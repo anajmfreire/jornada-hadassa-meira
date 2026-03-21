@@ -2735,9 +2735,11 @@ function clearAllData() {
         } catch(e) {}
 
         // Limpar Firebase (se logado)
-        if (typeof currentUser !== 'undefined' && currentUser && typeof db !== 'undefined' && db) {
-            try { db.ref('users/' + currentUser.uid).remove(); } catch(e) {}
-        }
+        try {
+            var fbUser = window._firebaseUser ? window._firebaseUser() : null;
+            var fbDB = window._firebaseDB;
+            if (fbUser && fbDB) { fbDB.ref('users/' + fbUser.uid).remove(); }
+        } catch(e) {}
 
         // Resetar appData
         appData = getDefaultData();
