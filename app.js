@@ -2784,6 +2784,10 @@ var GEMINI_MODEL = 'gemini-3.1-pro-preview';
 var _geminiApiKey = '';
 
 function loadApiKeyFromEnv() {
+    // Só tenta carregar .env em localhost (não em produção)
+    if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        return Promise.resolve();
+    }
     return fetch('./.env').then(function(res) {
         if (!res.ok) return;
         return res.text();
