@@ -1849,7 +1849,19 @@ function extractExamData(imageBase64) {
         var result = {};
         if (parsed.tipo) result.type = parsed.tipo;
         if (parsed.titulo) result.title = parsed.titulo;
-        if (parsed.data) result.date = parsed.data;
+        // Converter qualquer formato de data para YYYY-MM-DD
+        if (parsed.data) {
+            var d = String(parsed.data).trim();
+            // DD/MM/YYYY ou DD.MM.YYYY ou DD-MM-YYYY
+            var m1 = d.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/);
+            if (m1) { result.date = m1[3] + '-' + m1[2].padStart(2,'0') + '-' + m1[1].padStart(2,'0'); }
+            // DD/MM/YY ou DD.MM.YY
+            else { var m2 = d.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2})$/);
+            if (m2) { result.date = '20' + m2[3] + '-' + m2[2].padStart(2,'0') + '-' + m2[1].padStart(2,'0'); }
+            // YYYY-MM-DD (já correto)
+            else if (/^\d{4}-\d{2}-\d{2}$/.test(d)) { result.date = d; }
+            }
+        }
         if (parsed.medico) result.doctor = parsed.medico;
         if (parsed.laboratorio) result.lab = parsed.laboratorio;
         if (parsed.outros) result.results = parsed.outros;
