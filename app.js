@@ -798,59 +798,47 @@ function autoCheckExamsFromEntries() {
     var unchecked = getManualUnchecks();
     var changed = false;
 
-    // Keywords específicas por item (sem ambiguidade entre trimestres)
-    // Itens exclusivos por trimestre (não repetem entre trimestres)
-    var exclusiveItems = {
-        't1_0': { keywords: ['hemograma', 'hemoglobina', 'hematócrito', 'hematocrito', 'eritrócito', 'eritrocito', 'leucócito', 'leucocito', 'plaqueta', 'vcm', 'hcm', 'chcm', 'rdw'], trimester: 1 },
-        't1_1': { keywords: ['tipo sangu', 'grupo sangu', 'fator rh', 'abo', 'coombs'], trimester: 1 },
-        't1_2': { keywords: ['glicemia', 'glicose', 'jejum', 'glucose'], trimester: 1 },
-        't1_3': { keywords: ['hiv', 'sifilis', 'sífilis', 'hepatite', 'toxoplasm', 'rubéola', 'rubeola', 'cmv', 'sorologia', 'vdrl', 'anti-hbs', 'hbsag'], trimester: 1 },
-        't1_4': { keywords: ['urina tipo', 'urocultura', 'eas', 'sumário de urina', 'sumario de urina', 'parcial de urina'], trimester: 1 },
-        't1_5': { keywords: ['transvaginal'], trimester: 1 },
-        't1_6': { keywords: ['transluc', 'nucal'], trimester: 1 },
-        't1_7': { keywords: ['nipt'], trimester: 1 },
-        't2_0': { keywords: ['morfol'], trimester: 2 },
-        't2_1': { keywords: ['totg', 'tolerância à glicose', 'tolerancia a glicose', 'curva glic', 'sobrecarga', '75g'], trimester: 2 },
-        't2_2': { keywords: ['hemograma', 'hemoglobina', 'hematócrito', 'hematocrito'], trimester: 2 },
-        't2_3': { keywords: ['urina tipo', 'urocultura', 'parcial de urina'], trimester: 2 },
-        't3_0': { keywords: ['ultrassom 3', 'us 3', 'ecografia 3'], trimester: 3 },
-        't3_1': { keywords: ['estreptococo', 'gbs', 'grupo b', 'streptococcus'], trimester: 3 },
-        't3_2': { keywords: ['hemograma', 'hemoglobina', 'hematócrito', 'hematocrito'], trimester: 3 },
-        't3_3': { keywords: ['sorologia', 'hiv', 'sifilis', 'sífilis', 'hepatite', 'vdrl'], trimester: 3 },
-        't3_4': { keywords: ['cardiotoco', 'ctg'], trimester: 3 },
-        't3_5': { keywords: ['biofísico', 'biofisico', 'pbf'], trimester: 3 }
+    // APENAS itens do 1º trimestre + itens ÚNICOS do 2º e 3º são auto-marcados.
+    // Itens repetidos (hemograma controle, urina repetir, sorologias repetição)
+    // NÃO são auto-marcados - o usuário marca manualmente quando fizer.
+    var autoCheckItems = {
+        't1_0': ['hemograma', 'hemoglobina', 'hematócrito', 'hematocrito', 'eritrócito', 'eritrocito', 'leucócito', 'leucocito', 'plaqueta', 'vcm', 'hcm', 'chcm', 'rdw'],
+        't1_1': ['tipo sangu', 'grupo sangu', 'fator rh', 'abo', 'coombs'],
+        't1_2': ['glicemia', 'glicose', 'jejum', 'glucose'],
+        't1_3': ['hiv', 'sifilis', 'sífilis', 'hepatite', 'toxoplasm', 'rubéola', 'rubeola', 'cmv', 'sorologia', 'vdrl'],
+        't1_4': ['urina tipo', 'urocultura', 'eas', 'sumário de urina', 'parcial de urina'],
+        't1_5': ['transvaginal'],
+        't1_6': ['transluc', 'nucal'],
+        't1_7': ['nipt'],
+        't2_0': ['morfológico', 'morfologico'],
+        't2_1': ['totg', 'tolerância à glicose', 'tolerancia a glicose', 'curva glic', '75g'],
+        't3_1': ['estreptococo', 'gbs', 'streptococcus']
+        // t2_2, t2_3, t3_0, t3_2, t3_3, t3_4, t3_5 = NÃO auto-marcar (repetições ou muito genéricos)
     };
 
     doneExams.forEach(function(ex) {
         var searchText = ((ex.title || '') + ' ' + (ex.results || '') + ' ' + (ex.type || '')).toLowerCase();
         var examTrimester = ex.date ? getExamTrimester(ex.date) : null;
 
-        Object.keys(exclusiveItems).forEach(function(key) {
-            if (checklist[key]) return; // já marcado
-            if (unchecked.indexOf(key) !== -1) return; // desmarcado manualmente
+        Object.keys(autoCheckItems).forEach(function(key) {
+            if (checklist[key]) return;
+            if (unchecked.indexOf(key) !== -1) return;
 
-            var item = exclusiveItems[key];
-            var keywords = item.keywords;
+            var keywords = autoCheckItems[key];
             var matched = keywords.some(function(kw) { return searchText.indexOf(kw) !== -1; });
+            if (!matched) return;
 
-            if (matched && examTrimester !== null) {
-                // Só marcar se o exame foi feito no trimestre correto
-                if (examTrimester === item.trimester) {
-                    checklist[key] = true;
-                    changed = true;
-                }
-                // Para exames do 1º trimestre, também marca se feito antes do 2º tri
-                // (exames iniciais podem ser feitos cedo)
-                else if (item.trimester === 1 && examTrimester <= 1) {
-                    checklist[key] = true;
-                    changed = true;
-                }
-            } else if (matched && examTrimester === null) {
-                // Sem dados gestacionais, marca no 1º trimestre por segurança
-                if (item.trimester === 1) {
-                    checklist[key] = true;
-                    changed = true;
-                }
+            var keyTrimester = parseInt(key.charAt(1));
+
+            // Para 1º tri: sempre marca
+            if (keyTrimester === 1) {
+                checklist[key] = true;
+                changed = true;
+            }
+            // Para 2º/3º tri: só marca se o exame foi feito NAQUELE trimestre
+            else if (examTrimester !== null && examTrimester === keyTrimester) {
+                checklist[key] = true;
+                changed = true;
             }
         });
     });
@@ -875,7 +863,7 @@ function renderExamChecklist() {
     var currentTrimester = info.weeks < 14 ? 1 : info.weeks < 28 ? 2 : 3;
 
     // Limpar checks automáticos de trimestres futuros (bug de versões anteriores)
-    if (!localStorage.getItem('hadassa_checklist_cleaned_v2')) {
+    if (!localStorage.getItem('hadassa_checklist_cleaned_v3')) {
         var cl = getExamChecklist();
         var trimesterOfKey = { t1: 1, t2: 2, t3: 3 };
         var cleaned = false;
@@ -887,7 +875,7 @@ function renderExamChecklist() {
             }
         });
         if (cleaned) saveExamChecklist(cl);
-        localStorage.setItem('hadassa_checklist_cleaned_v2', 'true');
+        localStorage.setItem('hadassa_checklist_cleaned_v3', 'true');
     }
 
     // Auto-marcar exames realizados antes de renderizar
