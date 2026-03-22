@@ -1265,18 +1265,178 @@ function showExamDetail(ex) {
 
 // ============ LISTS (Enxoval, Mala, Doctor Questions) ============
 var defaultEnxoval = [
-    { cat: 'Roupas', items: ['Bodies (10+)', 'Macacões (8+)', 'Meias (6 pares)', 'Toucas (3)', 'Luvas (3 pares)', 'Casaquinhos (4)', 'Calças (6)', 'Pijamas (4)'] },
-    { cat: 'Higiene', items: ['Fraldas RN e P', 'Lenços umedecidos', 'Pomada para assaduras', 'Sabonete líquido neutro', 'Shampoo neutro', 'Álcool 70%', 'Algodão', 'Cotonetes', 'Tesoura de unha', 'Termômetro'] },
-    { cat: 'Quarto', items: ['Berço com colchão', 'Lençóis (3+)', 'Manta/cobertor', 'Travesseiro anti-refluxo', 'Babá eletrônica', 'Luminária noturna', 'Móbile'] },
-    { cat: 'Alimentação', items: ['Mamadeiras (se usar)', 'Esterilizador', 'Bomba de leite', 'Potes para armazenar leite', 'Babadores (6+)'] },
-    { cat: 'Passeio', items: ['Carrinho de bebê', 'Bebê-conforto', 'Canguru/sling', 'Bolsa maternidade'] }
+    { cat: 'Roupas RN (0-1 mês)', items: [
+        'Bodies manga curta - 6 un (tam RN)',
+        'Bodies manga longa - 6 un (tam RN)',
+        'Macacões manga longa com pé - 6 un (tam RN)',
+        'Culotes/Calças com pé - 4 un (tam RN)',
+        'Casaquinhos de linha/malha - 3 un (tam RN)',
+        'Meias - 6 pares (tam RN)',
+        'Toucas/Gorros - 3 un (tam RN)',
+        'Luvas antiarranhão - 3 pares (tam RN)',
+        'Sapatinhos de linha - 2 pares (tam RN)'
+    ]},
+    { cat: 'Roupas P (1-3 meses)', items: [
+        'Bodies manga curta - 6 un (tam P)',
+        'Bodies manga longa - 6 un (tam P)',
+        'Macacões manga longa com pé - 6 un (tam P)',
+        'Culotes/Calças com pé - 4 un (tam P)',
+        'Casaquinhos de linha/malha - 3 un (tam P)',
+        'Meias - 6 pares (tam P)',
+        'Conjuntinhos (blusa + calça) - 4 un (tam P)'
+    ]},
+    { cat: 'Roupas M (3-6 meses)', items: [
+        'Bodies manga curta - 6 un (tam M)',
+        'Bodies manga longa - 6 un (tam M)',
+        'Macacões - 4 un (tam M)',
+        'Conjuntinhos (blusa + calça) - 4 un (tam M)',
+        'Casaquinhos - 2 un (tam M)'
+    ]},
+    { cat: 'Fraldas e Higiene', items: [
+        'Fraldas descartáveis RN - 2 pacotes (aprox 36 un cada)',
+        'Fraldas descartáveis P - 4 pacotes',
+        'Fraldas descartáveis M - 2 pacotes',
+        'Fraldas de pano/boca - 12 un (uso multiuso)',
+        'Lenços umedecidos sem perfume - 4 pacotes',
+        'Pomada para assaduras (Bepantol/Hipoglós)',
+        'Sabonete líquido neutro (cabeça e corpo)',
+        'Shampoo neutro bebê',
+        'Óleo de amêndoas ou vegetal',
+        'Algodão hidrófilo - 2 pacotes',
+        'Cotonetes com haste flexível',
+        'Álcool 70% (para umbigo)',
+        'Tesoura de unha com ponta arredondada',
+        'Escova de cabelo macia',
+        'Termômetro digital',
+        'Aspirador nasal',
+        'Soro fisiológico nasal'
+    ]},
+    { cat: 'Quarto do Bebê', items: [
+        'Berço com colchão firme (certificado INMETRO)',
+        'Lençóis de berço com elástico - 3 un',
+        'Protetor de colchão impermeável - 2 un',
+        'Mantas leves de algodão - 3 un',
+        'Cobertor/edredom fino (agosto = inverno seco)',
+        'Travesseiro antirrefluxo',
+        'Mosquiteiro para berço',
+        'Babá eletrônica',
+        'Luminária/luz noturna',
+        'Móbile musical',
+        'Trocador com colchonete',
+        'Cesto/organizador para fraldas',
+        'Lixeira com tampa (para fraldas)'
+    ]},
+    { cat: 'Banho', items: [
+        'Banheira ergonômica com suporte',
+        'Toalhas com capuz - 3 un',
+        'Toalhas fralda - 4 un',
+        'Roupão de banho bebê - 1 un',
+        'Suporte/rede para banheira'
+    ]},
+    { cat: 'Alimentação', items: [
+        'Almofada de amamentação',
+        'Bomba extratora de leite (manual ou elétrica)',
+        'Potes para armazenar leite materno - 6 un',
+        'Mamadeiras anticólica - 3 un (se usar)',
+        'Esterilizador de mamadeira',
+        'Escova para lavar mamadeiras',
+        'Babadores - 8 un',
+        'Paninhos de boca - 12 un',
+        'Chupetas ortodônticas - 2 un (se usar, tam 0-6m)'
+    ]},
+    { cat: 'Passeio e Transporte', items: [
+        'Bebê-conforto/cadeirinha para carro (obrigatório)',
+        'Carrinho de bebê',
+        'Canguru/Sling ergonômico',
+        'Bolsa maternidade espaçosa',
+        'Trocador portátil',
+        'Protetor solar para carro',
+        'Capa de chuva para carrinho'
+    ]},
+    { cat: 'Segurança e Saúde', items: [
+        'Kit de primeiros socorros bebê',
+        'Termômetro de banho',
+        'Umidificador de ar (agosto = clima seco)',
+        'Protetor de tomada',
+        'Trava para gavetas/armários'
+    ]}
 ];
 
-var defaultMalaMae = ['Camisolas (2-3)', 'Roupão', 'Chinelo', 'Sutiã de amamentação (2)', 'Calcinha pós-parto (4)', 'Absorvente pós-parto', 'Kit higiene pessoal', 'Documentos (RG, cartão SUS, cartão pré-natal)', 'Carregador de celular', 'Snacks', 'Água'];
+var defaultMalaMae = [
+    '📋 DOCUMENTOS',
+    'RG e CPF (original e cópia)',
+    'Cartão do SUS ou convênio',
+    'Cartão de pré-natal com exames',
+    'Plano de parto (se tiver)',
+    'Certidão de casamento/nascimento (para registro)',
+    '',
+    '👗 ROUPAS (para 2-3 dias)',
+    'Camisolas com abertura frontal - 3 un',
+    'Roupão/robe confortável - 1 un',
+    'Sutiã de amamentação - 3 un',
+    'Calcinhas pós-parto descartáveis - 6 un',
+    'Meias antiderrapantes - 2 pares',
+    'Chinelo de borracha para banho - 1 par',
+    'Roupa confortável para alta - 1 conjunto',
+    '',
+    '🧴 HIGIENE',
+    'Absorvente noturno pós-parto - 2 pacotes',
+    'Absorvente para seios - 1 caixa',
+    'Pomada de lanolina (para mamilos)',
+    'Shampoo e condicionador (sachê)',
+    'Sabonete',
+    'Escova e pasta de dentes',
+    'Desodorante',
+    'Escova/pente de cabelo e elásticos',
+    'Hidratante labial',
+    'Absorvente íntimo',
+    '',
+    '🔌 OUTROS',
+    'Carregador de celular e cabo longo',
+    'Fone de ouvido',
+    'Garrafa de água reutilizável',
+    'Snacks saudáveis (barrinhas, biscoitos)',
+    'Sacola para roupa suja',
+    'Almofada de amamentação (se couber)'
+];
 
-var defaultMalaBebe = ['Bodies (3)', 'Macacões (3)', 'Meias (2 pares)', 'Touca', 'Luvas', 'Manta', 'Fraldas RN', 'Lenços umedecidos', 'Pomada assaduras', 'Roupa de saída da maternidade'];
+var defaultMalaBebe = [
+    '👶 ROUPAS (para 2-3 dias)',
+    'Bodies manga longa - 6 un (tam RN + P)',
+    'Macacões com pé - 4 un (tam RN + P)',
+    'Casaquinho de linha/lã - 2 un',
+    'Meias - 4 pares',
+    'Toucas/Gorros - 2 un',
+    'Luvas antiarranhão - 2 pares',
+    'Manta de algodão - 2 un',
+    'Roupa de saída da maternidade - 1 conjunto especial',
+    '',
+    '🧷 FRALDAS E HIGIENE',
+    'Fraldas descartáveis RN - 1 pacote (aprox 36 un)',
+    'Fraldas de pano/boca - 6 un',
+    'Lenços umedecidos sem perfume - 1 pacote',
+    'Pomada para assaduras',
+    'Algodão hidrófilo',
+    'Álcool 70% (para coto umbilical)',
+    'Sabonete líquido neutro',
+    '',
+    '🍼 ALIMENTAÇÃO',
+    'Paninhos de boca - 4 un',
+    'Chupeta (se for usar) - 1 un tam 0-6m',
+    '',
+    '🚗 SAÍDA',
+    'Bebê-conforto instalado no carro (obrigatório)',
+    'Cobertor extra para o trajeto'
+];
 
 function getListData(key) {
+    // Forçar atualização das listas para a versão completa com quantidades
+    if (!localStorage.getItem('hadassa_lists_v2')) {
+        localStorage.removeItem('hadassa_list_enxoval');
+        localStorage.removeItem('hadassa_list_malaMae');
+        localStorage.removeItem('hadassa_list_malaBebe');
+        localStorage.setItem('hadassa_lists_v2', 'true');
+    }
     var saved = localStorage.getItem('hadassa_list_' + key);
     if (saved) { try { return JSON.parse(saved); } catch(e) {} }
     return null;
