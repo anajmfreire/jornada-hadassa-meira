@@ -161,6 +161,7 @@
                 localStorage.setItem('hadassa_last_sync', syncData.lastSync);
                 setSyncStatus('Sincronizado \u2713 ' + new Date().toLocaleTimeString());
                 isSyncing = false;
+                _justSynced = true;
             }).catch(function(error) {
                 setSyncStatus('Erro ao sincronizar');
                 isSyncing = false;
@@ -185,7 +186,23 @@
                 var cloudTimestamp = cloudData.lastSync || '0';
 
                 if (cloudTimestamp > localTimestamp) {
+                    // Preservar DUM e DPP locais se o usuário as configurou
+                    var localDum = appData.config.dum;
+                    var localDpp = appData.config.dpp;
+                    var localDateBase = appData.config.dateBase;
+                    var localFirstUSDate = appData.config.firstUSDate;
+                    var localFirstUSWeeks = appData.config.firstUSWeeks;
+                    var localFirstUSDays = appData.config.firstUSDays;
+
                     appData = cloudData.appData;
+
+                    // Restaurar configs de data locais (o usuário tem controle total)
+                    if (localDum) appData.config.dum = localDum;
+                    if (localDpp) appData.config.dpp = localDpp;
+                    if (localDateBase) appData.config.dateBase = localDateBase;
+                    if (localFirstUSDate) appData.config.firstUSDate = localFirstUSDate;
+                    if (localFirstUSWeeks) appData.config.firstUSWeeks = localFirstUSWeeks;
+                    if (localFirstUSDays) appData.config.firstUSDays = localFirstUSDays;
 
                     // Salvar sem trigger sync loop
                     var origSave = window._origSaveData || saveData;
@@ -217,11 +234,14 @@
             db.ref('users/' + currentUser.uid + '/data/lastSync').on('value', function(snapshot) {
                 var cloudSync = snapshot.val();
                 var localSync = localStorage.getItem('hadassa_last_sync') || '0';
-                if (cloudSync && cloudSync > localSync && !isSyncing) {
+                // Ignorar mudanças vindas de nós mesmos (evita loop de sync)
+                if (cloudSync && cloudSync > localSync && !isSyncing && !_justSynced) {
                     syncFromCloud();
                 }
+                _justSynced = false;
             });
         }
+        var _justSynced = false;
 
         // ============ AUTH STATE LISTENER ============
         auth.onAuthStateChanged(function(user) {

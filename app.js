@@ -425,9 +425,28 @@ var MS_PER_DAY = 24 * 60 * 60 * 1000;
  * @param {string} [targetDate] - Data alvo (formato YYYY-MM-DD). Se omitido, usa data atual.
  * @returns {{weeks: number, days: number, totalDays: number}}
  */
+/**
+ * Cria Date a partir de string YYYY-MM-DD sem problemas de timezone.
+ * Interpreta sempre como data local (meia-noite local).
+ */
+function parseLocalDate(dateStr) {
+    var parts = dateStr.split('-');
+    return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+}
+
+/**
+ * Formata Date para string YYYY-MM-DD sem conversão UTC.
+ */
+function toLocalDateStr(date) {
+    var y = date.getFullYear();
+    var m = String(date.getMonth() + 1).padStart(2, '0');
+    var d = String(date.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
+}
+
 function calcWeeksFromDUM(dum, targetDate) {
-    var dumDate = new Date(dum + 'T12:00:00');
-    var target = targetDate ? new Date(targetDate + 'T12:00:00') : new Date();
+    var dumDate = parseLocalDate(dum);
+    var target = targetDate ? parseLocalDate(targetDate) : new Date();
     var diffMs = target - dumDate;
     var diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     var weeks = Math.floor(diffDays / 7);
@@ -435,17 +454,50 @@ function calcWeeksFromDUM(dum, targetDate) {
     return { weeks: weeks, days: days, totalDays: diffDays };
 }
 
+/**
+ * Calcula idade gestacional com base nos dados da 1ª US.
+ * Usa a data da US + idade gestacional informada pelo médico como referência.
+ * Ex: Se na US de 03/01/2026 o médico disse 7s+4d, e hoje é 22/03/2026,
+ *     dias desde a US = 78, total de dias gestacionais = 53 + 78 = 131 = 18s+5d
+ */
+function calcWeeksFromUS(usDate, usWeeks, usDays, targetDate) {
+    var usDateObj = parseLocalDate(usDate);
+    var target = targetDate ? parseLocalDate(targetDate) : new Date();
+    var daysSinceUS = Math.floor((target - usDateObj) / (1000 * 60 * 60 * 24));
+    var totalDaysAtUS = (usWeeks * 7) + usDays;
+    var totalDays = totalDaysAtUS + daysSinceUS;
+    var weeks = Math.floor(totalDays / 7);
+    var days = totalDays % 7;
+    return { weeks: weeks, days: days, totalDays: totalDays };
+}
+
+/**
+ * Calcula a idade gestacional usando a base configurada (DUM ou US).
+ * Retorna null se não houver dados suficientes.
+ */
+function calcCurrentGestationalAge(targetDate) {
+    var cfg = appData.config;
+    if (cfg.dateBase === 'us' && cfg.firstUSDate && cfg.firstUSWeeks) {
+        return calcWeeksFromUS(cfg.firstUSDate, parseInt(cfg.firstUSWeeks) || 0, parseInt(cfg.firstUSDays) || 0, targetDate);
+    }
+    if (cfg.dum) {
+        return calcWeeksFromDUM(cfg.dum, targetDate);
+    }
+    return null;
+}
+
 function updateWeekBanner() {
     var cfg = appData.config;
-    if (!cfg.dum) {
+    var info = calcCurrentGestationalAge();
+
+    if (!info) {
         document.getElementById('currentWeek').textContent = '--';
-        document.getElementById('progressText').textContent = 'Configure a DUM nas configurações';
+        document.getElementById('progressText').textContent = 'Configure a DUM ou dados da 1ª US nas configurações';
         document.getElementById('progressBar').style.width = '0%';
         document.getElementById('dueDate').textContent = '--/--/----';
         return;
     }
 
-    var info = calcWeeksFromDUM(cfg.dum);
     document.getElementById('currentWeek').textContent = info.weeks;
     var pct = Math.min((info.totalDays / PREGNANCY_DAYS) * 100, 100);
     document.getElementById('progressBar').style.width = pct + '%';
@@ -454,11 +506,13 @@ function updateWeekBanner() {
 
     if (cfg.dpp) {
         document.getElementById('dueDate').textContent = formatDate(cfg.dpp);
-    } else {
-        var dumDate = new Date(cfg.dum + 'T12:00:00');
+    } else if (cfg.dum) {
+        var dumDate = parseLocalDate(cfg.dum);
         var dppDate = new Date(dumDate.getTime() + PREGNANCY_DAYS * MS_PER_DAY);
-        var dppStr = dppDate.toISOString().split('T')[0];
+        var dppStr = toLocalDateStr(dppDate);
         document.getElementById('dueDate').textContent = formatDate(dppStr);
+    } else {
+        document.getElementById('dueDate').textContent = '--/--/----';
     }
 
     document.querySelector('.header h1').textContent = 'A Jornada de ' + cfg.babyName;
@@ -609,13 +663,13 @@ function renderMilestoneCard() {
     var fruitDiv = document.getElementById('fruitContent');
     var cfg = appData.config;
 
-    if (!cfg.dum) {
+    var info = calcCurrentGestationalAge();
+    if (!info) {
         card.style.display = 'none';
         return;
     }
 
     card.style.display = 'block';
-    var info = calcWeeksFromDUM(cfg.dum);
     var daysLeft = PREGNANCY_DAYS - info.totalDays;
     if (daysLeft < 0) daysLeft = 0;
 
@@ -704,19 +758,83 @@ function saveExamChecklist(data) {
     localStorage.setItem('hadassa_exam_checklist', JSON.stringify(data));
 }
 
+/**
+ * Auto-marca itens do checklist de trimestre com base nos exames realizados.
+ * Faz matching por palavras-chave entre título/resultados do exame e o nome do checklist.
+ */
+function autoCheckExamsFromEntries() {
+    var exams = [];
+    try { exams = JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); } catch(e) {}
+    var doneExams = exams.filter(function(ex) { return ex.status === 'done'; });
+    if (doneExams.length === 0) return;
+
+    var checklist = getExamChecklist();
+    var changed = false;
+
+    // Palavras-chave para matching: cada item do checklist mapeado a termos de busca
+    var matchKeywords = {
+        't1_0': ['hemograma'],
+        't1_1': ['tipo sangu', 'grupo sangu', 'fator rh', 'abo'],
+        't1_2': ['glicemia', 'glicose', 'jejum'],
+        't1_3': ['hiv', 'sifilis', 'sífilis', 'hepatite', 'toxoplasm', 'rubéola', 'rubeola', 'cmv', 'sorologia'],
+        't1_4': ['urina', 'urocultura', 'eas'],
+        't1_5': ['transvaginal'],
+        't1_6': ['transluc', 'nucal'],
+        't1_7': ['nipt'],
+        't2_0': ['morfol'],
+        't2_1': ['totg', 'tolerância à glicose', 'tolerancia', 'curva glic'],
+        't2_2': ['hemograma'],
+        't2_3': ['urina', 'urocultura'],
+        't3_0': ['ultrassom', 'us '],
+        't3_1': ['estreptococo', 'gbs', 'grupo b'],
+        't3_2': ['hemograma'],
+        't3_3': ['sorologia', 'hiv', 'sifilis', 'sífilis', 'hepatite'],
+        't3_4': ['cardiotoco', 'ctg'],
+        't3_5': ['biofísico', 'biofisico', 'pbf']
+    };
+
+    doneExams.forEach(function(ex) {
+        var searchText = ((ex.title || '') + ' ' + (ex.results || '') + ' ' + (ex.type || '')).toLowerCase();
+
+        Object.keys(matchKeywords).forEach(function(key) {
+            if (checklist[key]) return; // já marcado
+            var keywords = matchKeywords[key];
+            var matched = keywords.some(function(kw) { return searchText.indexOf(kw) !== -1; });
+
+            // Para hemograma no 2º e 3º trimestre, verificar se já existe match no 1º
+            if (matched && (key === 't2_2' || key === 't3_2')) {
+                // Hemograma de controle - só marca se já tem hemograma do trimestre anterior
+                if (key === 't2_2' && !checklist['t1_0']) return;
+                if (key === 't3_2' && !checklist['t2_2']) return;
+            }
+
+            if (matched) {
+                checklist[key] = true;
+                changed = true;
+            }
+        });
+    });
+
+    if (changed) {
+        saveExamChecklist(checklist);
+    }
+}
+
 function renderExamChecklist() {
     var card = document.getElementById('examChecklistCard');
     var container = document.getElementById('examChecklistContent');
     var cfg = appData.config;
 
-    if (!cfg.dum) {
+    var info = calcCurrentGestationalAge();
+    if (!info) {
         card.style.display = 'none';
         return;
     }
 
     card.style.display = 'block';
-    var info = calcWeeksFromDUM(cfg.dum);
     var currentTrimester = info.weeks < 14 ? 1 : info.weeks < 28 ? 2 : 3;
+    // Auto-marcar exames realizados antes de renderizar
+    autoCheckExamsFromEntries();
     var checked = getExamChecklist();
 
     var html = '';
@@ -761,6 +879,79 @@ function renderExamChecklist() {
     });
 }
 
+// ============ EXAM ALERT (gentil, 1x por sessão) ============
+/**
+ * Exames recomendados por faixa de semanas gestacionais.
+ * Cada item tem: semana mínima, semana máxima, nome, e chave do checklist.
+ */
+var examSchedule = [
+    { minWeek: 6, maxWeek: 8, name: 'Ultrassom transvaginal', key: 't1_5' },
+    { minWeek: 1, maxWeek: 13, name: 'Hemograma completo', key: 't1_0' },
+    { minWeek: 1, maxWeek: 13, name: 'Tipo sanguíneo + fator Rh', key: 't1_1' },
+    { minWeek: 1, maxWeek: 13, name: 'Glicemia de jejum', key: 't1_2' },
+    { minWeek: 1, maxWeek: 13, name: 'Sorologias', key: 't1_3' },
+    { minWeek: 1, maxWeek: 13, name: 'Urina tipo 1 + urocultura', key: 't1_4' },
+    { minWeek: 11, maxWeek: 14, name: 'Ultrassom de translucência nucal', key: 't1_6' },
+    { minWeek: 20, maxWeek: 24, name: 'Ultrassom morfológico', key: 't2_0' },
+    { minWeek: 24, maxWeek: 28, name: 'Teste de tolerância à glicose (TOTG)', key: 't2_1' },
+    { minWeek: 14, maxWeek: 27, name: 'Hemograma de controle', key: 't2_2' },
+    { minWeek: 14, maxWeek: 27, name: 'Urina tipo 1 + urocultura (repetir)', key: 't2_3' },
+    { minWeek: 32, maxWeek: 36, name: 'Ultrassom de 3º trimestre', key: 't3_0' },
+    { minWeek: 35, maxWeek: 37, name: 'Estreptococo grupo B (GBS)', key: 't3_1' },
+    { minWeek: 28, maxWeek: 40, name: 'Sorologias de repetição', key: 't3_3' }
+];
+
+function renderExamAlert() {
+    var alertCard = document.getElementById('examAlertCard');
+    if (!alertCard) return;
+
+    var info = calcCurrentGestationalAge();
+    if (!info) {
+        alertCard.style.display = 'none';
+        return;
+    }
+
+    // Só mostrar 1x por sessão (até fechar o banner)
+    if (sessionStorage.getItem('hadassa_exam_alert_dismissed')) {
+        alertCard.style.display = 'none';
+        return;
+    }
+
+    var currentWeek = info.weeks;
+    var checked = getExamChecklist();
+
+    // Filtrar exames pendentes que estão na janela da idade gestacional atual
+    var pending = examSchedule.filter(function(item) {
+        return currentWeek >= item.minWeek && currentWeek <= item.maxWeek && !checked[item.key];
+    });
+
+    if (pending.length === 0) {
+        alertCard.style.display = 'none';
+        return;
+    }
+
+    var html = '<div class="card" style="background:linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);border:1px solid #ffc107;position:relative;">';
+    html += '<button id="examAlertDismiss" style="position:absolute;top:8px;right:12px;background:none;border:none;font-size:1.2em;cursor:pointer;color:#856404;padding:4px;" title="Fechar">&times;</button>';
+    html += '<div class="card-title" style="color:#856404;font-size:0.85em;"><i class="fas fa-bell"></i> Lembrete de Exames</div>';
+    html += '<p style="font-size:0.78em;color:#856404;margin-bottom:8px;">Você está com <strong>' + currentWeek + ' semanas</strong>. Estes exames são recomendados para este período:</p>';
+    html += '<ul style="margin:0;padding-left:20px;font-size:0.78em;color:#664d03;">';
+    pending.forEach(function(item) {
+        html += '<li style="margin-bottom:4px;">' + escapeHtml(item.name) + ' <span style="color:#999;font-size:0.85em;">(' + item.minWeek + '-' + item.maxWeek + ' sem)</span></li>';
+    });
+    html += '</ul>';
+    html += '<p style="font-size:0.65em;color:#a68b00;margin-top:8px;text-align:center;">Confirme com seu obstetra quais exames são indicados para você.</p>';
+    html += '</div>';
+
+    alertCard.innerHTML = html;
+    alertCard.style.display = 'block';
+
+    // Botão de fechar
+    document.getElementById('examAlertDismiss').addEventListener('click', function() {
+        alertCard.style.display = 'none';
+        sessionStorage.setItem('hadassa_exam_alert_dismissed', 'true');
+    });
+}
+
 // ============ UX-013: SKELETON LOADING ============
 function showSkeleton(containerId, count) {
     count = count || 3;
@@ -777,12 +968,12 @@ function showSkeleton(containerId, count) {
 var achievementDefs = [
     { id: 'first_us', icon: '\u{1F4F8}', title: 'Primeiro Registro', desc: 'Registrou o primeiro ultrassom', check: function() { return appData.ultrasounds.length >= 1; } },
     { id: 'heartbeat', icon: '\u{1F49C}', title: 'Coração Batendo', desc: 'Registrou batimentos cardíacos', check: function() { return appData.ultrasounds.some(function(u) { return u.heartbeat; }); } },
-    { id: 'halfway', icon: '\u{1F389}', title: 'Metade do Caminho', desc: 'Atingiu 20 semanas', check: function() { if (!appData.config.dum) return false; return calcWeeksFromDUM(appData.config.dum).weeks >= 20; } },
+    { id: 'halfway', icon: '\u{1F389}', title: 'Metade do Caminho', desc: 'Atingiu 20 semanas', check: function() { var i = calcCurrentGestationalAge(); return i ? i.weeks >= 20 : false; } },
     { id: 'five_apps', icon: '\u{1F4C5}', title: 'Mãe Organizada', desc: '5 consultas registradas', check: function() { return appData.appointments.length >= 5; } },
     { id: 'ten_notes', icon: '\u{1F4D6}', title: 'Diário Completo', desc: '10 anotações feitas', check: function() { return appData.notes.length >= 10; } },
     { id: 'three_us', icon: '\u{1F4CA}', title: 'Acompanhamento', desc: '3 ultrassons registrados', check: function() { return appData.ultrasounds.length >= 3; } },
     { id: 'weight_track', icon: '\u{2696}\u{FE0F}', title: 'Controlando o Peso', desc: 'Registrou peso em uma consulta', check: function() { return appData.appointments.some(function(a) { return a.momWeight; }); } },
-    { id: 'third_tri', icon: '\u{1F31F}', title: 'Reta Final', desc: 'Entrou no 3º trimestre', check: function() { if (!appData.config.dum) return false; return calcWeeksFromDUM(appData.config.dum).weeks >= 28; } }
+    { id: 'third_tri', icon: '\u{1F31F}', title: 'Reta Final', desc: 'Entrou no 3º trimestre', check: function() { var i = calcCurrentGestationalAge(); return i ? i.weeks >= 28 : false; } }
 ];
 
 function renderAchievements() {
@@ -888,7 +1079,7 @@ function renderSymptomTracker() {
     var container = document.getElementById('symptomTrackerContent');
     if (!container) return;
 
-    var today = new Date().toISOString().split('T')[0];
+    var today = toLocalDateStr(new Date());
     var log = getSymptomLog();
     var todayEntries = log.filter(function(s) { return s.date === today; });
 
@@ -909,7 +1100,7 @@ function renderSymptomTracker() {
     for (var i = 6; i >= 0; i--) {
         var d = new Date();
         d.setDate(d.getDate() - i);
-        var dateStr = d.toISOString().split('T')[0];
+        var dateStr = toLocalDateStr(d);
         var dayEntries = log.filter(function(s) { return s.date === dateStr; });
         var total = dayEntries.reduce(function(sum, s) { return sum + s.intensity; }, 0);
         last7.push({ date: dateStr, count: dayEntries.length, total: total });
@@ -933,7 +1124,7 @@ function renderSymptomTracker() {
         btn.addEventListener('click', function() {
             var symptomId = btn.dataset.symptom;
             var log = getSymptomLog();
-            var today = new Date().toISOString().split('T')[0];
+            var today = toLocalDateStr(new Date());
             var existingIdx = log.findIndex(function(s) { return s.date === today && s.symptom === symptomId; });
 
             if (existingIdx !== -1) {
@@ -960,7 +1151,7 @@ function shareCard() {
     if (uss.length === 0) { showToast('Registre um ultrassom primeiro!'); return; }
 
     var last = uss[uss.length - 1];
-    var info = cfg.dum ? calcWeeksFromDUM(cfg.dum) : null;
+    var info = calcCurrentGestationalAge();
     var fruit = info ? getFruitForWeek(info.weeks) : null;
 
     var canvas = document.createElement('canvas');
@@ -1103,9 +1294,9 @@ function renderOnboardingStep(step) {
             var dum = document.getElementById('obDUM').value;
             if (dum) {
                 appData.config.dum = dum;
-                var dumDate = new Date(dum + 'T12:00:00');
+                var dumDate = parseLocalDate(dum);
                 var dpp = new Date(dumDate.getTime() + PREGNANCY_DAYS * MS_PER_DAY);
-                appData.config.dpp = dpp.toISOString().split('T')[0];
+                appData.config.dpp = toLocalDateStr(dpp);
                 saveData(appData);
             }
             renderOnboardingStep(3);
@@ -1157,7 +1348,7 @@ function initSwipeNavigation() {
 function printSummary() {
     var cfg = appData.config;
     var uss = appData.ultrasounds;
-    var info = cfg.dum ? calcWeeksFromDUM(cfg.dum) : null;
+    var info = calcCurrentGestationalAge();
     var last = uss.length > 0 ? uss[uss.length - 1] : null;
     var fruit = info ? getFruitForWeek(info.weeks) : null;
 
@@ -1193,7 +1384,7 @@ function printSummary() {
     }
 
     // Upcoming appointments
-    var today = new Date().toISOString().split('T')[0];
+    var today = toLocalDateStr(new Date());
     var upcoming = appData.appointments.filter(function(a) { return a.date >= today; }).sort(function(a, b) { return a.date.localeCompare(b.date); }).slice(0, 5);
     if (upcoming.length > 0) {
         html += '<h2 style="color:#be185d;">Próximas Consultas</h2><table><tr><th>Data</th><th>Tipo</th><th>Médico</th></tr>';
@@ -1211,7 +1402,7 @@ function printSummary() {
         html += '</ul>';
     }
 
-    html += '<div class="footer">Gerado em ' + formatDate(new Date().toISOString().split('T')[0]) + ' | A Jornada de ' + escapeHtml(cfg.babyName) + '</div>';
+    html += '<div class="footer">Gerado em ' + formatDate(toLocalDateStr(new Date())) + ' | A Jornada de ' + escapeHtml(cfg.babyName) + '</div>';
     html += '</body></html>';
 
     printWindow.document.write(html);
@@ -1231,7 +1422,7 @@ function scheduleAppointmentReminders() {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
     var now = new Date();
-    var today = now.toISOString().split('T')[0];
+    var today = toLocalDateStr(now);
 
     appData.appointments.forEach(function(a) {
         if (a.date < today) return;
@@ -1502,13 +1693,13 @@ function renderKickCounter() {
     var container = document.getElementById('kickCounterContent');
     var cfg = appData.config;
 
-    if (!cfg.dum) { card.style.display = 'none'; return; }
-    var info = calcWeeksFromDUM(cfg.dum);
+    var info = calcCurrentGestationalAge();
+    if (!info) { card.style.display = 'none'; return; }
     if (info.weeks < 28) { card.style.display = 'none'; return; }
 
     card.style.display = 'block';
     var history = getKickHistory();
-    var today = new Date().toISOString().split('T')[0];
+    var today = toLocalDateStr(new Date());
     var todayEntry = history.find(function(h) { return h.date === today; });
 
     var html = '<div style="text-align:center;padding:8px 0;">';
@@ -1566,7 +1757,7 @@ function renderKickCounter() {
             if (kickSession.kicks >= 10) {
                 var minutes = Math.floor((Date.now() - kickSession.startTime) / 60000);
                 var history = getKickHistory();
-                var today = new Date().toISOString().split('T')[0];
+                var today = toLocalDateStr(new Date());
                 var existing = history.findIndex(function(h) { return h.date === today; });
                 var entry = { date: today, kicks: kickSession.kicks, minutes: minutes };
                 if (existing !== -1) history[existing] = entry; else history.push(entry);
@@ -1588,7 +1779,7 @@ function renderKickCounter() {
             var minutes = Math.floor((Date.now() - kickSession.startTime) / 60000);
             if (kickSession.kicks > 0) {
                 var history = getKickHistory();
-                var today = new Date().toISOString().split('T')[0];
+                var today = toLocalDateStr(new Date());
                 var existing = history.findIndex(function(h) { return h.date === today; });
                 var entry = { date: today, kicks: kickSession.kicks, minutes: minutes || 1 };
                 if (existing !== -1) history[existing] = entry; else history.push(entry);
@@ -1705,7 +1896,7 @@ function saveUltrasound(e) {
         photo: photoId // AUDIT V1.2: agora armazena ID para IndexedDB, nao base64
     };
 
-    var today = new Date().toISOString().split('T')[0];
+    var today = toLocalDateStr(new Date());
     if (us.date > today) {
         if (!confirm('A data do ultrassom é no futuro. Deseja continuar mesmo assim?')) return;
     }
@@ -1805,6 +1996,22 @@ function renderTimelineItem(us, showActions) {
             '</div>';
     }
     html += '</div>';
+    return html;
+}
+
+function renderTimelineExamItem(ex) {
+    var typeIcons = { blood: '\u{1FA78}', routine: '\u{1F9EA}', glucose: '\u{1F4C9}', us: '\u{1F476}', prescription: '\u{1F48A}', diet: '\u{1F34E}', other: '\u{1F4CB}' };
+    var typeLabels = { blood: 'Sangue', routine: 'Rotina', glucose: 'Glicemia', us: 'Ultrassom', prescription: 'Receita', diet: 'Dieta', other: 'Outro' };
+    var icon = typeIcons[ex.type] || '\u{1F4CB}';
+    var label = typeLabels[ex.type] || ex.type;
+
+    var html = '<div class="timeline-item" style="border-left:3px solid var(--pink-300);padding-left:12px;">';
+    html += '<div class="timeline-date">' + formatDate(ex.date) + ' | ' + icon + ' ' + escapeHtml(label) + '</div>';
+    html += '<div class="timeline-title">' + escapeHtml(ex.title) + '</div>';
+    html += '<div class="timeline-details">';
+    if (ex.doctor) html += '<div class="timeline-detail-item" style="font-size:0.75em;color:var(--text-medium);">Dr(a). ' + escapeHtml(ex.doctor) + '</div>';
+    if (ex.lab) html += '<div class="timeline-detail-item" style="font-size:0.75em;color:var(--text-medium);">' + escapeHtml(ex.lab) + '</div>';
+    html += '</div></div>';
     return html;
 }
 
@@ -1950,6 +2157,8 @@ function renderDashboard() {
     renderSymptomTracker();
     // FEAT-006: Exam checklist
     renderExamChecklist();
+    // Alerta gentil de exames pendentes (1x por sessão)
+    renderExamAlert();
     // FEAT-004: Kick counter
     renderKickCounter();
 
@@ -1969,12 +2178,31 @@ function renderDashboard() {
     }
 
     var timeline = document.getElementById('dashTimeline');
-    if (uss.length === 0) {
-        timeline.innerHTML = '<div class="empty-state"><i class="fas fa-baby-carriage"></i><p>Adicione seu primeiro ultrassom!</p></div>';
+    // Combinar ultrassons e exames na linha do tempo
+    var timelineItems = [];
+    uss.forEach(function(us) {
+        timelineItems.push({ type: 'us', date: us.date, data: us });
+    });
+    var exams = [];
+    try { exams = JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); } catch(e) {}
+    exams.forEach(function(ex) {
+        if (ex.status === 'done') {
+            timelineItems.push({ type: 'exam', date: ex.date, data: ex });
+        }
+    });
+    // Ordenar por data (mais recente primeiro)
+    timelineItems.sort(function(a, b) { return b.date.localeCompare(a.date); });
+
+    if (timelineItems.length === 0) {
+        timeline.innerHTML = '<div class="empty-state"><i class="fas fa-baby-carriage"></i><p>Adicione seu primeiro ultrassom ou exame!</p></div>';
     } else {
         var html = '';
-        uss.slice().reverse().slice(0, 5).forEach(function(us) {
-            html += renderTimelineItem(us, false);
+        timelineItems.slice(0, 8).forEach(function(item) {
+            if (item.type === 'us') {
+                html += renderTimelineItem(item.data, false);
+            } else {
+                html += renderTimelineExamItem(item.data);
+            }
         });
         timeline.innerHTML = html;
         // Add click listeners for timeline items on dashboard
@@ -1985,7 +2213,7 @@ function renderDashboard() {
 
     // Upcoming appointments
     var upDiv = document.getElementById('upcomingAppointments');
-    var today = new Date().toISOString().split('T')[0];
+    var today = toLocalDateStr(new Date());
     var upcoming = appData.appointments.filter(function(a) { return a.date >= today; }).sort(function(a, b) { return a.date.localeCompare(b.date); }).slice(0, 3);
 
     if (upcoming.length === 0) {
@@ -2072,7 +2300,7 @@ function renderAppointments() {
         return;
     }
 
-    var today = new Date().toISOString().split('T')[0];
+    var today = toLocalDateStr(new Date());
     var html = '';
     appData.appointments.slice().reverse().forEach(function(a) {
         var isPast = a.date < today;
@@ -2112,7 +2340,7 @@ function saveNote(e) {
         id: editId || genId(),
         type: document.getElementById('noteType').value,
         title: document.getElementById('noteTitle').value,
-        date: document.getElementById('noteDate').value || new Date().toISOString().split('T')[0],
+        date: document.getElementById('noteDate').value || toLocalDateStr(new Date()),
         content: document.getElementById('noteContent').value
     };
 
@@ -2419,7 +2647,7 @@ function generatePDF(type) {
     doc.text('A Jornada de ' + cfg.babyName, 105, 15, { align: 'center' });
     doc.setFontSize(10);
     doc.text(cfg.babyName + ' (' + cfg.babySex + ') | Mae: ' + cfg.momName, 105, 23, { align: 'center' });
-    doc.text('Gerado em: ' + formatDate(new Date().toISOString().split('T')[0]), 105, 30, { align: 'center' });
+    doc.text('Gerado em: ' + formatDate(toLocalDateStr(new Date())), 105, 30, { align: 'center' });
 
     doc.setTextColor(0, 0, 0);
     var y = 45;
@@ -2576,22 +2804,9 @@ function saveConfig() {
     appData.config.firstUSWeeks = document.getElementById('cfgFirstUSWeeks').value;
     appData.config.firstUSDays = document.getElementById('cfgFirstUSDays').value || '0';
 
-    // Se usar data da 1ª US, recalcular DUM e DPP
-    if (appData.config.dateBase === 'us' && appData.config.firstUSDate && appData.config.firstUSWeeks) {
-        var usDate = new Date(appData.config.firstUSDate + 'T12:00:00');
-        var usWeeks = parseInt(appData.config.firstUSWeeks) || 0;
-        var usDays = parseInt(appData.config.firstUSDays) || 0;
-        var totalDaysAtUS = (usWeeks * 7) + usDays;
-        // DUM calculada = data da US - dias gestacionais na US
-        var calculatedDUM = new Date(usDate.getTime() - (totalDaysAtUS * 86400000));
-        appData.config.dum = calculatedDUM.toISOString().split('T')[0];
-        // DPP = DUM + 280 dias
-        var calculatedDPP = new Date(calculatedDUM.getTime() + (280 * 86400000));
-        appData.config.dpp = calculatedDPP.toISOString().split('T')[0];
-        // Atualizar campos visuais
-        document.getElementById('cfgDUM').value = appData.config.dum;
-        document.getElementById('cfgDPP').value = appData.config.dpp;
-    }
+    // DUM e DPP NUNCA são sobrescritos automaticamente.
+    // O usuário tem controle total sobre essas datas.
+    // A base do cálculo (DUM ou US) afeta apenas como a idade gestacional é exibida.
 
     saveData(appData);
     updateWeekBanner();
@@ -2629,6 +2844,8 @@ function loadConfig() {
     if (firstUSWeeksEl) firstUSWeeksEl.value = appData.config.firstUSWeeks || '';
     var firstUSDaysEl = document.getElementById('cfgFirstUSDays');
     if (firstUSDaysEl) firstUSDaysEl.value = appData.config.firstUSDays || '';
+
+    // DUM e DPP sempre editáveis - o usuário tem controle total
 }
 
 // ============ DATA IMPORT/EXPORT ============
@@ -2935,9 +3152,9 @@ function getPregnancyContext() {
     ctx += '- Mae: ' + cfg.momName + '\n';
     ctx += '- Médico(a): ' + (cfg.doctor || 'Nao informado') + '\n';
 
-    if (cfg.dum) {
-        var info = calcWeeksFromDUM(cfg.dum);
-        ctx += '- Idade gestacional atual: ' + info.weeks + ' semanas e ' + info.days + ' dias\n';
+    var infoCtx = calcCurrentGestationalAge();
+    if (infoCtx) {
+        ctx += '- Idade gestacional atual: ' + infoCtx.weeks + ' semanas e ' + infoCtx.days + ' dias\n';
         ctx += '- DUM: ' + formatDate(cfg.dum) + '\n';
     }
     if (cfg.dpp) ctx += '- DPP: ' + formatDate(cfg.dpp) + '\n';
@@ -2971,7 +3188,7 @@ function getPregnancyContext() {
     }
 
     if (apps.length > 0) {
-        var today = new Date().toISOString().split('T')[0];
+        var today = toLocalDateStr(new Date());
         var upcoming = apps.filter(function(a) { return a.date >= today; });
         if (upcoming.length > 0) {
             ctx += '\n\nPROXIMAS CONSULTAS:';

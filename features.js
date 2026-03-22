@@ -54,8 +54,8 @@ function getBabySizeForWeek(week) {
 }
 
 function renderWeeklyContent() {
-    if (!appData.config.dum) return;
-    var info = calcWeeksFromDUM(appData.config.dum);
+    var info = calcCurrentGestationalAge();
+    if (!info) return;
     var week = info.weeks;
     var fruit = getFruitForWeek(week);
     var babySize = getBabySizeForWeek(week);
@@ -319,7 +319,7 @@ function renderKickCounterDiary(container) {
                 if (kickSession.kicks >= 10) {
                     var minutes = Math.floor((Date.now() - kickSession.startTime) / 60000);
                     var history = getKickHistory();
-                    var today = new Date().toISOString().split('T')[0];
+                    var today = toLocalDateStr(new Date());
                     var existing = history.findIndex(function(h) { return h.date === today; });
                     var entry = { date: today, kicks: kickSession.kicks, minutes: minutes };
                     if (existing !== -1) history[existing] = entry; else history.push(entry);
@@ -333,7 +333,7 @@ function renderKickCounterDiary(container) {
                 var minutes = Math.floor((Date.now() - kickSession.startTime) / 60000);
                 if (kickSession.kicks > 0) {
                     var history = getKickHistory();
-                    var today = new Date().toISOString().split('T')[0];
+                    var today = toLocalDateStr(new Date());
                     var existing = history.findIndex(function(h) { return h.date === today; });
                     var entry = { date: today, kicks: kickSession.kicks, minutes: minutes || 1 };
                     if (existing !== -1) history[existing] = entry; else history.push(entry);
@@ -371,7 +371,7 @@ function renderLetterToBaby(container) {
     document.getElementById('btnPrintLetter').addEventListener('click', function() {
         var text = document.getElementById('letterText').value;
         var w = window.open('', '_blank');
-        w.document.write('<html><head><title>Carta para ' + escapeHtml(appData.config.babyName) + '</title><style>body{font-family:Georgia,serif;padding:50px;max-width:600px;margin:0 auto;line-height:2;color:#4a2040;}h1{color:#ec4899;text-align:center;font-family:cursive;}</style></head><body><h1>\u{1F48C} Carta para ' + escapeHtml(appData.config.babyName) + '</h1><p style="white-space:pre-line;">' + escapeHtml(text) + '</p><p style="text-align:right;margin-top:30px;color:#ec4899;">Com amor, ' + escapeHtml(appData.config.momName) + '<br>' + formatDate(new Date().toISOString().split('T')[0]) + '</p></body></html>');
+        w.document.write('<html><head><title>Carta para ' + escapeHtml(appData.config.babyName) + '</title><style>body{font-family:Georgia,serif;padding:50px;max-width:600px;margin:0 auto;line-height:2;color:#4a2040;}h1{color:#ec4899;text-align:center;font-family:cursive;}</style></head><body><h1>\u{1F48C} Carta para ' + escapeHtml(appData.config.babyName) + '</h1><p style="white-space:pre-line;">' + escapeHtml(text) + '</p><p style="text-align:right;margin-top:30px;color:#ec4899;">Com amor, ' + escapeHtml(appData.config.momName) + '<br>' + formatDate(toLocalDateStr(new Date())) + '</p></body></html>');
         w.document.close();
         w.print();
     });
@@ -509,7 +509,7 @@ function renderContractionCounter(container) {
                 var startTime = new Date(contractionSession.sessionStart);
                 var history = getContractionHistory();
                 history.push({
-                    date: new Date().toISOString().split('T')[0],
+                    date: toLocalDateStr(new Date()),
                     time: (startTime.getHours() < 10 ? '0' : '') + startTime.getHours() + ':' + (startTime.getMinutes() < 10 ? '0' : '') + startTime.getMinutes(),
                     count: contractionSession.contractions.length,
                     avgInterval: countInt > 0 ? Math.floor(totalInterval / countInt / 60000) : 0,
@@ -584,7 +584,7 @@ function saveDiaryEntry(e) {
 
     var entry = {
         id: editId || genId(),
-        date: document.getElementById('diaryDate').value || new Date().toISOString().split('T')[0],
+        date: document.getElementById('diaryDate').value || toLocalDateStr(new Date()),
         title: document.getElementById('diaryTitle').value,
         text: document.getElementById('diaryText').value,
         mood: document.getElementById('diaryMood').value || 'normal',
@@ -793,7 +793,7 @@ function renderSymptomsSection(tab) {
     tab = tab || 'register';
     var container = document.getElementById('symptomsFullContent');
     var log = getSymptomLog();
-    var today = new Date().toISOString().split('T')[0];
+    var today = toLocalDateStr(new Date());
 
     if (tab === 'register') {
         var todayEntries = log.filter(function(s) { return s.date === today; });
@@ -947,6 +947,10 @@ function saveExamEntry(e) {
     closeModal('examModal', true);
     showToast('Exame salvo!');
     renderExamsSection();
+    // Auto-marcar checklist de trimestre
+    if (typeof autoCheckExamsFromEntries === 'function') {
+        autoCheckExamsFromEntries();
+    }
 }
 
 function renderExamsSection(filter) {
@@ -1153,7 +1157,7 @@ function renderChecklist(container, data, key, hasCategories) {
 function printChecklist(title, data) {
     var w = window.open('', '_blank');
     var h = '<html><head><title>' + title + '</title><style>body{font-family:sans-serif;padding:30px;max-width:600px;margin:0 auto;}h1{color:#ec4899;text-align:center;}h3{color:#be185d;margin-top:15px;}.item{padding:6px 0;border-bottom:1px solid #eee;display:flex;align-items:center;gap:10px;}.check{width:16px;height:16px;border:2px solid #ccc;border-radius:3px;flex-shrink:0;}.checked{background:#ec4899;border-color:#ec4899;}</style></head><body>';
-    h += '<h1>' + title + '</h1><p style="text-align:center;color:#888;">' + (appData.config.momName || '') + ' — ' + formatDate(new Date().toISOString().split('T')[0]) + '</p>';
+    h += '<h1>' + title + '</h1><p style="text-align:center;color:#888;">' + (appData.config.momName || '') + ' — ' + formatDate(toLocalDateStr(new Date())) + '</p>';
     if (data[0] && data[0].cat) {
         data.forEach(function(cat) {
             h += '<h3>' + cat.cat + '</h3>';
@@ -1261,7 +1265,7 @@ function renderDoctorQuestions(container) {
         printBtn.addEventListener('click', function() {
             var w = window.open('', '_blank');
             var h = '<html><head><title>Perguntas para o Médico</title><style>body{font-family:sans-serif;padding:30px;}h1{color:#ec4899;}li{margin:10px 0;font-size:16px;}</style></head><body>';
-            h += '<h1>Perguntas para a Consulta</h1><p>Paciente: ' + escapeHtml(appData.config.momName) + ' | ' + formatDate(new Date().toISOString().split('T')[0]) + '</p><ol>';
+            h += '<h1>Perguntas para a Consulta</h1><p>Paciente: ' + escapeHtml(appData.config.momName) + ' | ' + formatDate(toLocalDateStr(new Date())) + '</p><ol>';
             questions.forEach(function(q) { h += '<li>' + escapeHtml(q) + '<br><br><hr style="border:1px dashed #ddd;"></li>'; });
             h += '</ol></body></html>';
             w.document.write(h);
@@ -1343,7 +1347,7 @@ function renderBirthPlan(tab) {
             container.querySelectorAll('[data-bp]').forEach(function(ta) { plan[ta.dataset.bp] = ta.value; });
             var w = window.open('', '_blank');
             var h = '<html><head><title>Plano de Parto</title><style>body{font-family:sans-serif;padding:30px;max-width:700px;margin:0 auto;}h1{color:#ec4899;text-align:center;}h3{color:#be185d;margin-top:20px;}.answer{background:#fdf2f8;padding:10px;border-radius:8px;margin:5px 0 15px;min-height:30px;}</style></head><body>';
-            h += '<h1>Plano de Parto</h1><p style="text-align:center;">' + escapeHtml(appData.config.momName) + ' | ' + formatDate(new Date().toISOString().split('T')[0]) + '</p>';
+            h += '<h1>Plano de Parto</h1><p style="text-align:center;">' + escapeHtml(appData.config.momName) + ' | ' + formatDate(toLocalDateStr(new Date())) + '</p>';
             birthPlanQuestions.forEach(function(bq) {
                 h += '<h3>' + escapeHtml(bq.q) + '</h3><div class="answer">' + escapeHtml(plan[bq.id] || '(não respondido)') + '</div>';
             });
@@ -1430,7 +1434,7 @@ var nutritionByTrimester = {
 function renderHealth(tab) {
     tab = tab || 'exercises';
     var container = document.getElementById('healthContent');
-    var info = appData.config.dum ? calcWeeksFromDUM(appData.config.dum) : null;
+    var info = calcCurrentGestationalAge();
     var trimester = info ? (info.weeks < 14 ? 1 : info.weeks < 28 ? 2 : 3) : 2;
 
     if (tab === 'exercises') {
@@ -1522,7 +1526,7 @@ var motivationalMessages = [
 
 function showDailyMotivation() {
     var lastShown = localStorage.getItem('hadassa_motivation_date');
-    var today = new Date().toISOString().split('T')[0];
+    var today = toLocalDateStr(new Date());
     if (lastShown === today) return;
 
     var dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
@@ -1560,8 +1564,8 @@ function scheduleAllNotifications() {
     });
 
     // Weekly pregnancy notification
-    if (appData.config.dum) {
-        var info = calcWeeksFromDUM(appData.config.dum);
+    var info = calcCurrentGestationalAge();
+    if (info) {
         var lastWeekNotif = localStorage.getItem('hadassa_week_notif');
         if (lastWeekNotif !== String(info.weeks) && info.days === 0) {
             new Notification('Semana ' + info.weeks + '!', {
@@ -1730,7 +1734,7 @@ var breastfeedingContent = [
     // Diary form
     document.getElementById('diaryForm').addEventListener('submit', saveDiaryEntry);
     document.getElementById('btnNewDiary').addEventListener('click', function() {
-        document.getElementById('diaryDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('diaryDate').value = toLocalDateStr(new Date());
         openModal('diaryModal');
     });
 
@@ -1765,7 +1769,7 @@ var breastfeedingContent = [
     // Exam form
     document.getElementById('examForm').addEventListener('submit', saveExamEntry);
     document.getElementById('btnNewExam').addEventListener('click', function() {
-        document.getElementById('examDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('examDate').value = toLocalDateStr(new Date());
         openModal('examModal');
     });
 

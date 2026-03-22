@@ -4,7 +4,7 @@
 
 // ============ HYDRATION WIDGET ============
 function getHydration() {
-    var today = new Date().toISOString().split('T')[0];
+    var today = toLocalDateStr(new Date());
     var saved = localStorage.getItem('hadassa_hydration');
     if (saved) { try { var d = JSON.parse(saved); if (d.date === today) return d; } catch(e) {} }
     return { date: today, cups: 0 };
@@ -79,7 +79,7 @@ function renderWeightCalc(container) {
     var bmi = preWeight / ((height/100) * (height/100));
     var bmiLabel = bmi < 18.5 ? 'Abaixo do peso' : bmi < 25 ? 'Peso normal' : bmi < 30 ? 'Sobrepeso' : 'Obesidade';
     var gainRange = bmi < 18.5 ? [12.5, 18] : bmi < 25 ? [11.5, 16] : bmi < 30 ? [7, 11.5] : [5, 9];
-    var info = cfg.dum ? calcWeeksFromDUM(cfg.dum) : null;
+    var info = calcCurrentGestationalAge();
     var weeklyGain = (gainRange[0] + gainRange[1]) / 2 / 40;
     var idealNow = info ? preWeight + (weeklyGain * info.weeks) : preWeight;
 
@@ -126,15 +126,15 @@ function renderMaternityLeave(container) {
     var cfg = appData.config;
     var dppStr = cfg.dpp;
     if (!dppStr && cfg.dum) {
-        var dumD = new Date(cfg.dum + 'T12:00:00');
+        var dumD = parseLocalDate(cfg.dum);
         var dppD = new Date(dumD.getTime() + 280 * 86400000);
-        dppStr = dppD.toISOString().split('T')[0];
+        dppStr = toLocalDateStr(dppD);
     }
     if (!dppStr) {
         container.innerHTML = '<div class="card"><div class="card-title">&#x1F4C5; Calculadora de Licença Maternidade</div><p style="font-size:0.85em;color:var(--text-light);">Configure a DUM ou DPP em Configurações.</p></div>';
         return;
     }
-    var dpp = new Date(dppStr + 'T12:00:00');
+    var dpp = parseLocalDate(dppStr);
     var start120 = new Date(dpp); start120.setDate(start120.getDate());
     var end120 = new Date(dpp); end120.setDate(end120.getDate() + 120);
     var end180 = new Date(dpp); end180.setDate(end180.getDate() + 180);
@@ -143,9 +143,9 @@ function renderMaternityLeave(container) {
     var html = '<div class="card"><div class="card-title">&#x1F4C5; Calculadora de Licença Maternidade</div>';
     html += '<div style="font-size:0.85em;color:var(--text-dark);line-height:1.8;">';
     html += '<div style="padding:10px;background:var(--pink-50);border-radius:12px;margin-bottom:10px;">&#x1F4CC; <strong>DPP:</strong> ' + formatDate(dppStr) + '</div>';
-    html += '<div style="padding:10px;background:#dbeafe;border-radius:12px;margin-bottom:10px;">&#x1F3E2; <strong>Pode iniciar a partir de:</strong> ' + formatDate(start28.toISOString().split('T')[0]) + ' (28 dias antes do parto)</div>';
-    html += '<div style="padding:10px;background:#dcfce7;border-radius:12px;margin-bottom:10px;">&#x2705; <strong>Licença 120 dias:</strong> até ' + formatDate(end120.toISOString().split('T')[0]) + '</div>';
-    html += '<div style="padding:10px;background:#f3e8ff;border-radius:12px;margin-bottom:10px;">&#x1F49C; <strong>Licença 180 dias (Empresa Cidadã):</strong> até ' + formatDate(end180.toISOString().split('T')[0]) + '</div>';
+    html += '<div style="padding:10px;background:#dbeafe;border-radius:12px;margin-bottom:10px;">&#x1F3E2; <strong>Pode iniciar a partir de:</strong> ' + formatDate(toLocalDateStr(start28)) + ' (28 dias antes do parto)</div>';
+    html += '<div style="padding:10px;background:#dcfce7;border-radius:12px;margin-bottom:10px;">&#x2705; <strong>Licença 120 dias:</strong> até ' + formatDate(toLocalDateStr(end120)) + '</div>';
+    html += '<div style="padding:10px;background:#f3e8ff;border-radius:12px;margin-bottom:10px;">&#x1F49C; <strong>Licença 180 dias (Empresa Cidadã):</strong> até ' + formatDate(toLocalDateStr(end180)) + '</div>';
     html += '</div>';
     html += '<p style="font-size:0.75em;color:var(--text-light);margin-top:10px;">* Datas estimadas. A licença inicia no dia do parto ou até 28 dias antes. Consulte o RH da sua empresa.</p>';
     html += '</div>';
@@ -185,7 +185,7 @@ function renderBreastTimer(container) {
     }
 
     // Today's feedings
-    var today = new Date().toISOString().split('T')[0];
+    var today = toLocalDateStr(new Date());
     var todayFeedings = history.filter(function(h) { return h.date === today; });
     if (todayFeedings.length > 0) {
         html += '<div style="margin-top:12px;"><div style="font-size:0.82em;font-weight:700;color:var(--pink-600);margin-bottom:6px;">Mamadas de hoje (' + todayFeedings.length + '):</div>';
@@ -209,7 +209,7 @@ function renderBreastTimer(container) {
         var duration = Math.floor((Date.now() - bfSession.start) / 60000);
         var now = new Date();
         var h = getBfHistory();
-        h.push({ date: now.toISOString().split('T')[0], time: (now.getHours()<10?'0':'') + now.getHours() + ':' + (now.getMinutes()<10?'0':'') + now.getMinutes(), side: bfSession.side, duration: duration || 1 });
+        h.push({ date: toLocalDateStr(now), time: (now.getHours()<10?'0':'') + now.getHours() + ':' + (now.getMinutes()<10?'0':'') + now.getMinutes(), side: bfSession.side, duration: duration || 1 });
         saveBfHistory(h);
         bfSession = { active: false, side: null, start: null };
         showToast('Mamada registrada!');
@@ -270,7 +270,7 @@ function renderBPHistory(container) {
             var val = input.value.trim();
             if (!val || !val.includes('/')) { showToast('Formato inválido. Use: 120/80'); return; }
             var log = JSON.parse(localStorage.getItem('hadassa_bp_log') || '[]');
-            log.push({ date: new Date().toISOString().split('T')[0], bp: val });
+            log.push({ date: toLocalDateStr(new Date()), bp: val });
             localStorage.setItem('hadassa_bp_log', JSON.stringify(log));
             input.value = '';
             showToast('Pressão registrada!');
@@ -281,7 +281,7 @@ function renderBPHistory(container) {
 
 // --- Music Suggestions ---
 function renderMusic(container) {
-    var info = appData.config.dum ? calcWeeksFromDUM(appData.config.dum) : null;
+    var info = calcCurrentGestationalAge();
     var tri = info ? (info.weeks < 14 ? 1 : info.weeks < 28 ? 2 : 3) : 1;
 
     var allPlaylists = [
