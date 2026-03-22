@@ -1,6 +1,6 @@
 // AUDIT V1.2 [V12-SEC-004]: Cache apenas recursos do proprio origin.
 // CDNs protegidos por SRI no HTML — nao precisam de cache local.
-var CACHE_NAME = 'hadassa-meira-v19';
+var CACHE_NAME = 'hadassa-meira-v20';
 var ASSETS_TO_CACHE = [
     './',
     './index.html',

@@ -1081,13 +1081,26 @@ function showSkeleton(containerId, count) {
 }
 
 // ============ UX-017: ACHIEVEMENTS / GAMIFICATION ============
+function _getExamCount() {
+    try { var e = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); return e.filter(function(x){return x.status==='done'}).length; } catch(e) { return 0; }
+}
+function _getUSExamCount() {
+    try { var e = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); return e.filter(function(x){return x.type==='us'&&x.status==='done'}).length; } catch(e) { return 0; }
+}
+function _hasHeartbeat() {
+    if ((appData.ultrasounds || []).some(function(u){return u.heartbeat;})) return true;
+    try { var e = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]');
+        return e.some(function(x){ return x.type==='us' && x.specificData && x.specificData.exUsHeart; });
+    } catch(e) { return false; }
+}
+
 var achievementDefs = [
-    { id: 'first_us', icon: '\u{1F4F8}', title: 'Primeiro Registro', desc: 'Registrou o primeiro ultrassom', check: function() { return (appData.ultrasounds || []).length >= 1; } },
-    { id: 'heartbeat', icon: '\u{1F49C}', title: 'Coração Batendo', desc: 'Registrou batimentos cardíacos', check: function() { return (appData.ultrasounds || []).some(function(u) { return u.heartbeat; }); } },
+    { id: 'first_us', icon: '\u{1F4F8}', title: 'Primeiro Registro', desc: 'Registrou o primeiro exame', check: function() { return (appData.ultrasounds || []).length >= 1 || _getExamCount() >= 1; } },
+    { id: 'heartbeat', icon: '\u{1F49C}', title: 'Coração Batendo', desc: 'Registrou batimentos cardíacos', check: function() { return _hasHeartbeat(); } },
     { id: 'halfway', icon: '\u{1F389}', title: 'Metade do Caminho', desc: 'Atingiu 20 semanas', check: function() { var i = calcCurrentGestationalAge(); return i ? i.weeks >= 20 : false; } },
-    { id: 'five_apps', icon: '\u{1F4C5}', title: 'Mãe Organizada', desc: '5 consultas registradas', check: function() { return (appData.appointments || []).length >= 5; } },
+    { id: 'five_apps', icon: '\u{1F4C5}', title: 'Mãe Organizada', desc: '5 consultas ou exames', check: function() { return (appData.appointments || []).length + _getExamCount() >= 5; } },
     { id: 'ten_notes', icon: '\u{1F4D6}', title: 'Diário Completo', desc: '10 anotações feitas', check: function() { return (appData.notes || []).length >= 10; } },
-    { id: 'three_us', icon: '\u{1F4CA}', title: 'Acompanhamento', desc: '3 ultrassons registrados', check: function() { return (appData.ultrasounds || []).length >= 3; } },
+    { id: 'three_us', icon: '\u{1F4CA}', title: 'Acompanhamento', desc: '3 ultrassons registrados', check: function() { return (appData.ultrasounds || []).length + _getUSExamCount() >= 3; } },
     { id: 'weight_track', icon: '\u{2696}\u{FE0F}', title: 'Controlando o Peso', desc: 'Registrou peso em uma consulta', check: function() { return (appData.appointments || []).some(function(a) { return a.momWeight; }); } },
     { id: 'third_tri', icon: '\u{1F31F}', title: 'Reta Final', desc: 'Entrou no 3º trimestre', check: function() { var i = calcCurrentGestationalAge(); return i ? i.weeks >= 28 : false; } }
 ];
@@ -2280,19 +2293,54 @@ function renderDashboard() {
     // FEAT-004: Kick counter
     renderKickCounter();
 
-    var uss = appData.ultrasounds;
+    var uss = appData.ultrasounds || [];
+
+    // Buscar dados de US também dos exames (tipo 'us' com specificData)
+    var exams = [];
+    try { exams = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); } catch(e) {}
+    var usExams = exams.filter(function(ex) { return ex.type === 'us' && ex.status === 'done'; })
+        .sort(function(a, b) { return a.date.localeCompare(b.date); });
+
+    // Pegar últimos valores de batimentos, peso, femur, CCN de qualquer fonte
+    var latestStats = { heartbeat: '--', weight: '--', femur: '--', ccn: '--' };
+
+    // Primeiro dos ultrasounds tradicionais
     if (uss.length > 0) {
         var last = uss[uss.length - 1];
-        document.getElementById('statHeartbeat').textContent = last.heartbeat || '--';
-        document.getElementById('statWeight').textContent = last.weight || '--';
-        document.getElementById('statFemur').textContent = last.femur || '--';
-        document.getElementById('statCCN').textContent = last.ccn || '--';
+        if (last.heartbeat) latestStats.heartbeat = last.heartbeat;
+        if (last.weight) latestStats.weight = last.weight;
+        if (last.femur) latestStats.femur = last.femur;
+        if (last.ccn) latestStats.ccn = last.ccn;
+    }
 
-        if (uss.length >= 2) {
-            var prev = uss[uss.length - 2];
-            document.getElementById('comparisonCard').style.display = 'block';
-            document.getElementById('comparisonContent').innerHTML = renderComparison(prev, last);
+    // Depois dos exames tipo US (mais recente tem prioridade)
+    usExams.forEach(function(ex) {
+        var d = ex.specificData || {};
+        if (d.exUsHeart) latestStats.heartbeat = d.exUsHeart;
+        if (d.exUsWeight) latestStats.weight = d.exUsWeight;
+        if (d.exUsFemur) latestStats.femur = d.exUsFemur;
+        if (d.exUsCcn) latestStats.ccn = d.exUsCcn;
+        // Também tentar extrair dos resultados texto
+        if (!d.exUsHeart && ex.results) {
+            var hbMatch = ex.results.match(/(?:batimento|bcf|fc\s*fetal)[:\s]*(\d+)/i);
+            if (hbMatch) latestStats.heartbeat = hbMatch[1];
+            var wMatch = ex.results.match(/peso\s*(?:fetal|estimado)?[:\s]*(\d+)/i);
+            if (wMatch) latestStats.weight = wMatch[1];
+            var fMatch = ex.results.match(/f[eê]mur[:\s]*([\d.]+)/i);
+            if (fMatch) latestStats.femur = fMatch[1];
         }
+    });
+
+    document.getElementById('statHeartbeat').textContent = latestStats.heartbeat;
+    document.getElementById('statWeight').textContent = latestStats.weight;
+    document.getElementById('statFemur').textContent = latestStats.femur;
+    document.getElementById('statCCN').textContent = latestStats.ccn;
+
+    if (uss.length >= 2) {
+        var prev = uss[uss.length - 2];
+        var last2 = uss[uss.length - 1];
+        document.getElementById('comparisonCard').style.display = 'block';
+        document.getElementById('comparisonContent').innerHTML = renderComparison(prev, last2);
     }
 
     var timeline = document.getElementById('dashTimeline');
