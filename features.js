@@ -1005,11 +1005,19 @@ function renderExamCard(ex) {
     html += '</div></div>';
 
     if (ex.doctor) html += '<p style="font-size:0.8em;color:var(--text-medium);margin-top:6px;">Dr(a). ' + escapeHtml(ex.doctor) + (ex.lab ? ' | ' + escapeHtml(ex.lab) : '') + '</p>';
-    if (ex.results) html += '<p style="font-size:0.8em;color:var(--text-dark);margin-top:6px;white-space:pre-line;background:var(--pink-50);padding:8px;border-radius:8px;">' + escapeHtml(ex.results) + '</p>';
     if (ex.scheduledDate && ex.status !== 'done') html += '<p style="font-size:0.8em;color:var(--pink-600);margin-top:4px;"><i class="fas fa-clock"></i> Agendado: ' + formatDate(ex.scheduledDate) + '</p>';
-    if (ex.fileId) html += '<div id="exam-file-' + escapeHtml(ex.id) + '" style="margin-top:8px;"><small style="color:var(--text-light);">Carregando anexo...</small></div>';
+    // Resumo compacto dos resultados (máx 2 linhas)
+    if (ex.results) {
+        var lines = ex.results.split('\n').filter(function(l) { return l.trim(); });
+        var preview = lines.slice(0, 2).join(' | ');
+        if (preview.length > 80) preview = preview.substring(0, 80) + '...';
+        if (lines.length > 2) preview += ' (+' + (lines.length - 2) + ' itens)';
+        html += '<p style="font-size:0.75em;color:var(--text-medium);margin-top:6px;cursor:pointer;" data-view-exam="' + escapeHtml(ex.id) + '"><i class="fas fa-list"></i> ' + escapeHtml(preview) + '</p>';
+    }
+    if (ex.fileId) html += '<div style="font-size:0.7em;color:var(--text-light);margin-top:4px;"><i class="fas fa-paperclip"></i> Anexo</div>';
 
     html += '<div class="actions-row" style="margin-top:8px;">';
+    html += '<button class="btn btn-secondary btn-small" data-view-exam="' + escapeHtml(ex.id) + '"><i class="fas fa-eye"></i> Ver</button>';
     html += '<button class="btn btn-secondary btn-small" data-edit-exam="' + escapeHtml(ex.id) + '"><i class="fas fa-edit"></i> Editar</button>';
     html += '<button class="btn btn-danger btn-small" data-delete-exam="' + escapeHtml(ex.id) + '"><i class="fas fa-trash"></i></button>';
     html += '</div></div>';
@@ -1046,6 +1054,13 @@ function attachExamListeners(container) {
         });
     });
 
+    container.querySelectorAll('[data-view-exam]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var ex = exams.find(function(e) { return e.id === btn.dataset.viewExam; });
+            if (ex) showExamDetail(ex);
+        });
+    });
+
     container.querySelectorAll('[data-delete-exam]').forEach(function(btn) {
         btn.addEventListener('click', function() {
             showCustomConfirm('Excluir Exame', 'Excluir este exame?', '\u{1F5D1}').then(function(ok) {
@@ -1056,6 +1071,62 @@ function attachExamListeners(container) {
             });
         });
     });
+}
+
+function showExamDetail(ex) {
+    var typeLabels = { blood: '\u{1FA78} Sangue', routine: '\u{1F9EA} Rotina', glucose: '\u{1F4C9} Glicemia', us: '\u{1F476} US', prescription: '\u{1F48A} Receita', diet: '\u{1F34E} Dieta', other: '\u{1F4CB} Outro' };
+    var statusLabels = { done: '\u{2705} Realizado', scheduled: '\u{1F4C5} Agendado', pending: '\u{23F3} Pendente' };
+
+    document.getElementById('detailTitle').innerHTML = '<i class="fas fa-file-medical"></i> ' + escapeHtml(ex.title);
+    var html = '';
+    html += '<div style="margin-bottom:12px;">';
+    html += '<div style="font-size:0.85em;color:var(--text-medium);margin-bottom:4px;"><strong>Data:</strong> ' + formatDate(ex.date) + '</div>';
+    html += '<div style="font-size:0.85em;color:var(--text-medium);margin-bottom:4px;"><strong>Tipo:</strong> ' + (typeLabels[ex.type] || ex.type) + ' | ' + (statusLabels[ex.status] || ex.status) + '</div>';
+    if (ex.doctor) html += '<div style="font-size:0.85em;color:var(--text-medium);margin-bottom:4px;"><strong>Médico(a):</strong> ' + escapeHtml(ex.doctor) + '</div>';
+    if (ex.lab) html += '<div style="font-size:0.85em;color:var(--text-medium);margin-bottom:4px;"><strong>Local:</strong> ' + escapeHtml(ex.lab) + '</div>';
+    html += '</div>';
+
+    if (ex.results) {
+        html += '<div style="font-weight:700;color:var(--pink-600);margin-bottom:8px;">Resultados</div>';
+        // Formatar resultados em tabela estruturada
+        var lines = ex.results.split('\n').filter(function(l) { return l.trim(); });
+        html += '<div style="background:var(--pink-50);border-radius:10px;padding:12px;">';
+        lines.forEach(function(line) {
+            var trimmed = line.trim();
+            // Tentar separar nome: valor
+            var colonIdx = trimmed.indexOf(':');
+            if (colonIdx > 0 && colonIdx < trimmed.length - 1) {
+                var name = trimmed.substring(0, colonIdx).trim();
+                var value = trimmed.substring(colonIdx + 1).trim();
+                html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.05);font-size:0.82em;">';
+                html += '<span style="color:var(--text-medium);font-weight:500;">' + escapeHtml(name) + '</span>';
+                html += '<span style="color:var(--text-dark);font-weight:600;">' + escapeHtml(value) + '</span>';
+                html += '</div>';
+            } else {
+                html += '<div style="padding:4px 0;font-size:0.82em;color:var(--text-dark);">' + escapeHtml(trimmed) + '</div>';
+            }
+        });
+        html += '</div>';
+    }
+
+    // Anexo
+    if (ex.fileId) {
+        html += '<div id="examDetailFile" style="margin-top:12px;"><strong>Anexo:</strong><br><small>Carregando...</small></div>';
+    }
+
+    document.getElementById('detailContent').innerHTML = html;
+    openModal('detailModal');
+
+    // Carregar anexo
+    if (ex.fileId) {
+        loadPhoto(ex.fileId).then(function(data) {
+            var div = document.getElementById('examDetailFile');
+            if (div && data) {
+                div.innerHTML = '<strong>Anexo:</strong><br>';
+                renderPhoto(div, data);
+            }
+        }).catch(function() {});
+    }
 }
 
 // ============ LISTS (Enxoval, Mala, Doctor Questions) ============
@@ -1805,35 +1876,34 @@ var breastfeedingContent = [
                     preview.innerHTML = '<div style="padding:10px;background:var(--pink-50);border-radius:8px;font-size:0.8em;"><i class="fas fa-file"></i> ' + escapeHtml(file.name) + '</div>';
                 }
 
-                // OCR: Botão de extração para QUALQUER tipo de arquivo
+                // OCR: Extração AUTOMÁTICA ao anexar arquivo
                 var ocrDiv = document.createElement('div');
                 ocrDiv.style.cssText = 'margin-top:8px;text-align:center;';
-                ocrDiv.innerHTML = '<button class="btn btn-secondary" id="btnOcrExtract" style="border-radius:20px;width:100%;padding:10px;"><i class="fas fa-magic"></i> Extrair dados automaticamente (IA)</button>' +
-                    '<div style="font-size:0.7em;color:var(--text-light);margin-top:4px;">A IA analisa o documento e preenche os campos</div>';
+                ocrDiv.innerHTML = '<div style="padding:12px;font-size:0.85em;color:var(--pink-600);"><i class="fas fa-spinner fa-spin"></i> Extraindo dados automaticamente... aguarde</div>';
                 preview.appendChild(ocrDiv);
 
-                document.getElementById('btnOcrExtract').addEventListener('click', function() {
-                    ocrDiv.innerHTML = '<div style="padding:12px;font-size:0.85em;color:var(--pink-600);"><i class="fas fa-spinner fa-spin"></i> Analisando documento com IA... aguarde</div>';
+                extractExamData(imageData).then(function(result) {
+                    if (!result) {
+                        ocrDiv.innerHTML = '<div style="padding:8px;font-size:0.8em;color:#dc2626;"><i class="fas fa-times-circle"></i> Não foi possível extrair dados. Preencha manualmente.</div>';
+                        return;
+                    }
 
-                    extractExamData(imageData).then(function(result) {
-                        if (!result) {
-                            ocrDiv.innerHTML = '<div style="padding:8px;font-size:0.8em;color:#dc2626;"><i class="fas fa-times-circle"></i> Não foi possível extrair dados. Preencha manualmente.</div>';
-                            return;
-                        }
+                    if (result.type) {
+                        var typeMap = { blood: 'blood', sangue: 'blood', routine: 'routine', rotina: 'routine', glucose: 'glucose', glicemia: 'glucose', us: 'us', ultrassom: 'us', prescription: 'prescription', receita: 'prescription', other: 'other' };
+                        document.getElementById('examType').value = typeMap[result.type] || 'other';
+                    }
+                    if (result.title) document.getElementById('examTitle').value = result.title;
+                    if (result.date) document.getElementById('examDate').value = result.date;
+                    if (result.doctor) document.getElementById('examDoctor').value = result.doctor;
+                    if (result.lab) document.getElementById('examLab').value = result.lab;
+                    if (result.results) document.getElementById('examResults').value = result.results;
+                    // Auto-preencher médico do config se a IA não encontrou
+                    if (!result.doctor && appData.config.doctor) {
+                        document.getElementById('examDoctor').value = appData.config.doctor;
+                    }
 
-                        if (result.type) {
-                            var typeMap = { blood: 'blood', sangue: 'blood', routine: 'routine', rotina: 'routine', glucose: 'glucose', glicemia: 'glucose', us: 'us', ultrassom: 'us', prescription: 'prescription', receita: 'prescription', other: 'other' };
-                            document.getElementById('examType').value = typeMap[result.type] || 'other';
-                        }
-                        if (result.title) document.getElementById('examTitle').value = result.title;
-                        if (result.date) document.getElementById('examDate').value = result.date;
-                        if (result.doctor) document.getElementById('examDoctor').value = result.doctor;
-                        if (result.lab) document.getElementById('examLab').value = result.lab;
-                        if (result.results) document.getElementById('examResults').value = result.results;
-
-                        ocrDiv.innerHTML = '<div style="padding:8px;font-size:0.8em;color:#16a34a;"><i class="fas fa-check-circle"></i> Dados extraídos! Revise e ajuste se necessário.</div>';
-                        showToast('Dados extraídos com sucesso!');
-                    });
+                    ocrDiv.innerHTML = '<div style="padding:8px;font-size:0.8em;color:#16a34a;"><i class="fas fa-check-circle"></i> Dados extraídos! Revise e salve.</div>';
+                    showToast('Dados extraídos com sucesso!');
                 });
             }).catch(function() {});
         };

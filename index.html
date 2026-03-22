@@ -939,6 +939,12 @@
         <form id="examForm">
             <input type="hidden" id="examEditId" value="">
             <div class="form-group">
+                <label>Anexo (foto ou arquivo do exame)</label>
+                <input type="file" id="examFile" accept="image/*,.pdf" style="font-size:0.85em;">
+                <div id="examFilePreview" style="margin-top:8px;max-height:150px;overflow:hidden;border-radius:10px;"></div>
+            </div>
+            <div id="examFormFields">
+            <div class="form-group">
                 <label>Tipo *</label>
                 <select id="examType" required>
                     <option value="">Selecionar</option>
@@ -972,11 +978,6 @@
                 <textarea id="examResults" placeholder="Cole os resultados aqui, ou descreva..." maxlength="5000" style="min-height:100px;"></textarea>
             </div>
             <div class="form-group">
-                <label>Anexo (foto ou arquivo do exame)</label>
-                <input type="file" id="examFile" accept="image/*,.pdf" style="font-size:0.85em;">
-                <div id="examFilePreview" style="margin-top:8px;max-height:150px;overflow:hidden;border-radius:10px;"></div>
-            </div>
-            <div class="form-group">
                 <label>Status</label>
                 <select id="examStatus">
                     <option value="done">Realizado</option>
@@ -987,6 +988,7 @@
             <div class="form-group">
                 <label>Data agendada (se aplicável)</label>
                 <input type="date" id="examScheduledDate">
+            </div>
             </div>
             <button type="submit" class="btn btn-primary btn-block">
                 <i class="fas fa-save"></i> Salvar Exame
