@@ -947,9 +947,13 @@ function saveExamEntry(e) {
     closeModal('examModal', true);
     showToast('Exame salvo!');
     renderExamsSection();
-    // Auto-marcar checklist de trimestre
+    // Auto-marcar checklist + atualizar dashboard e timeline
     if (typeof autoCheckExamsFromEntries === 'function') {
         autoCheckExamsFromEntries();
+    }
+    if (typeof renderDashboard === 'function') {
+        updateWeekBanner();
+        renderDashboard();
     }
 }
 
@@ -1769,7 +1773,17 @@ var breastfeedingContent = [
     // Exam form
     document.getElementById('examForm').addEventListener('submit', saveExamEntry);
     document.getElementById('btnNewExam').addEventListener('click', function() {
+        document.getElementById('examEditId').value = '';
         document.getElementById('examDate').value = toLocalDateStr(new Date());
+        // Auto-preencher médico e laboratório do config ou último exame
+        var doc = document.getElementById('examDoctor');
+        var lab = document.getElementById('examLab');
+        if (!doc.value) doc.value = appData.config.doctor || '';
+        if (!lab.value) {
+            var prevExams = getExams();
+            var lastWithLab = prevExams.slice().reverse().find(function(ex) { return ex.lab; });
+            if (lastWithLab) lab.value = lastWithLab.lab;
+        }
         openModal('examModal');
     });
 

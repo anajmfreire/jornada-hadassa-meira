@@ -772,23 +772,24 @@ function autoCheckExamsFromEntries() {
     var changed = false;
 
     // Palavras-chave para matching: cada item do checklist mapeado a termos de busca
+    // Inclui termos que aparecem em resultados OCR de laboratórios
     var matchKeywords = {
-        't1_0': ['hemograma'],
-        't1_1': ['tipo sangu', 'grupo sangu', 'fator rh', 'abo'],
-        't1_2': ['glicemia', 'glicose', 'jejum'],
-        't1_3': ['hiv', 'sifilis', 'sífilis', 'hepatite', 'toxoplasm', 'rubéola', 'rubeola', 'cmv', 'sorologia'],
-        't1_4': ['urina', 'urocultura', 'eas'],
+        't1_0': ['hemograma', 'hemoglobina', 'hematócrito', 'hematocrito', 'eritrócito', 'eritrocito', 'leucócito', 'leucocito', 'plaqueta', 'vcm', 'hcm', 'chcm', 'rdw'],
+        't1_1': ['tipo sangu', 'grupo sangu', 'fator rh', 'abo', 'coombs'],
+        't1_2': ['glicemia', 'glicose', 'jejum', 'glucose'],
+        't1_3': ['hiv', 'sifilis', 'sífilis', 'hepatite', 'toxoplasm', 'rubéola', 'rubeola', 'cmv', 'sorologia', 'vdrl', 'anti-hbs', 'hbsag'],
+        't1_4': ['urina tipo', 'urocultura', 'eas', 'urina i', 'sumário de urina', 'sumario de urina', 'parcial de urina'],
         't1_5': ['transvaginal'],
         't1_6': ['transluc', 'nucal'],
         't1_7': ['nipt'],
         't2_0': ['morfol'],
-        't2_1': ['totg', 'tolerância à glicose', 'tolerancia', 'curva glic'],
-        't2_2': ['hemograma'],
-        't2_3': ['urina', 'urocultura'],
-        't3_0': ['ultrassom', 'us '],
-        't3_1': ['estreptococo', 'gbs', 'grupo b'],
-        't3_2': ['hemograma'],
-        't3_3': ['sorologia', 'hiv', 'sifilis', 'sífilis', 'hepatite'],
+        't2_1': ['totg', 'tolerância à glicose', 'tolerancia a glicose', 'curva glic', 'sobrecarga', '75g'],
+        't2_2': ['hemograma', 'hemoglobina', 'hematócrito', 'hematocrito', 'eritrócito', 'eritrocito'],
+        't2_3': ['urina tipo', 'urocultura', 'parcial de urina'],
+        't3_0': ['ultrassom', 'ecografia', 'ultrassonografia'],
+        't3_1': ['estreptococo', 'gbs', 'grupo b', 'streptococcus'],
+        't3_2': ['hemograma', 'hemoglobina', 'hematócrito', 'hematocrito'],
+        't3_3': ['sorologia', 'hiv', 'sifilis', 'sífilis', 'hepatite', 'vdrl'],
         't3_4': ['cardiotoco', 'ctg'],
         't3_5': ['biofísico', 'biofisico', 'pbf']
     };
@@ -800,14 +801,6 @@ function autoCheckExamsFromEntries() {
             if (checklist[key]) return; // já marcado
             var keywords = matchKeywords[key];
             var matched = keywords.some(function(kw) { return searchText.indexOf(kw) !== -1; });
-
-            // Para hemograma no 2º e 3º trimestre, verificar se já existe match no 1º
-            if (matched && (key === 't2_2' || key === 't3_2')) {
-                // Hemograma de controle - só marca se já tem hemograma do trimestre anterior
-                if (key === 't2_2' && !checklist['t1_0']) return;
-                if (key === 't3_2' && !checklist['t2_2']) return;
-            }
-
             if (matched) {
                 checklist[key] = true;
                 changed = true;
@@ -950,6 +943,70 @@ function renderExamAlert() {
         alertCard.style.display = 'none';
         sessionStorage.setItem('hadassa_exam_alert_dismissed', 'true');
     });
+}
+
+// ============ LAB RESULTS DASHBOARD ============
+/**
+ * Extrai valores numéricos dos resultados de exames e exibe no dashboard.
+ */
+function renderLabResults() {
+    var card = document.getElementById('labResultsCard');
+    var container = document.getElementById('labResultsContent');
+    if (!card || !container) return;
+
+    var exams = [];
+    try { exams = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); } catch(e) {}
+    var doneExams = exams.filter(function(ex) { return ex.status === 'done' && ex.results; });
+
+    if (doneExams.length === 0) {
+        card.style.display = 'none';
+        return;
+    }
+
+    // Padrões para extrair valores dos resultados
+    var patterns = [
+        { name: 'Glicose', unit: 'mg/dL', regex: /glic(?:ose|emia)[:\s]*(\d+[\.,]?\d*)\s*mg/i, ref: '65-100', icon: '\u{1F4C9}' },
+        { name: 'Hemoglobina', unit: 'g/dL', regex: /hemoglobina[:\s]*(\d+[\.,]?\d*)\s*g/i, ref: '12-15', icon: '\u{1FA78}' },
+        { name: 'Hematócrito', unit: '%', regex: /hemat[oó]crito[:\s]*(\d+[\.,]?\d*)\s*%/i, ref: '36-46', icon: '\u{1FA78}' },
+        { name: 'Plaquetas', unit: '/mm\u00B3', regex: /plaqueta[s]?[:\s]*(\d+[\.,]?\d*)/i, ref: '150.000-400.000', icon: '\u{1FA78}' },
+        { name: 'Leucócitos', unit: '/mm\u00B3', regex: /leuc[oó]cito[s]?[:\s]*(\d+[\.,]?\d*)/i, ref: '4.000-10.000', icon: '\u{1FA78}' },
+        { name: 'Tipo Sanguíneo', unit: '', regex: /grupo\s+sangu[ií]neo\s*\(abo\)[:\s]*([A-Z]+)/i, ref: '', icon: '\u{1FA78}' },
+        { name: 'Fator Rh', unit: '', regex: /(?:fator\s*rh|coombs\s*(?:indireto|direto))[:\s]*(positivo|negativo|[+-])/i, ref: '', icon: '\u{1FA78}' },
+        { name: 'TSH', unit: 'mUI/L', regex: /tsh[:\s]*(\d+[\.,]?\d*)/i, ref: '0.5-4.0', icon: '\u{1F9EC}' },
+        { name: 'Ferro', unit: '\u00B5g/dL', regex: /ferro\s*s[eé]rico[:\s]*(\d+[\.,]?\d*)/i, ref: '50-170', icon: '\u{1FA78}' }
+    ];
+
+    var results = [];
+    // Buscar em todos os exames realizados (mais recente tem prioridade)
+    var allText = '';
+    doneExams.sort(function(a, b) { return b.date.localeCompare(a.date); });
+    doneExams.forEach(function(ex) { allText += ex.results + '\n'; });
+
+    patterns.forEach(function(p) {
+        var match = allText.match(p.regex);
+        if (match) {
+            results.push({ name: p.name, value: match[1], unit: p.unit, ref: p.ref, icon: p.icon });
+        }
+    });
+
+    if (results.length === 0) {
+        card.style.display = 'none';
+        return;
+    }
+
+    card.style.display = 'block';
+    var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+    results.forEach(function(r) {
+        html += '<div style="background:var(--pink-50);border-radius:10px;padding:10px;text-align:center;">';
+        html += '<div style="font-size:1.2em;">' + r.icon + '</div>';
+        html += '<div style="font-size:1.1em;font-weight:700;color:var(--pink-600);">' + escapeHtml(r.value) + (r.unit ? ' <span style="font-size:0.7em;font-weight:400;">' + r.unit + '</span>' : '') + '</div>';
+        html += '<div style="font-size:0.7em;color:var(--text-medium);">' + escapeHtml(r.name) + '</div>';
+        if (r.ref) html += '<div style="font-size:0.6em;color:var(--text-light);">Ref: ' + r.ref + '</div>';
+        html += '</div>';
+    });
+    html += '</div>';
+    html += '<div style="font-size:0.6em;color:var(--text-light);text-align:center;margin-top:8px;">Valores extraídos automaticamente dos resultados. Confirme com seu médico.</div>';
+    container.innerHTML = html;
 }
 
 // ============ UX-013: SKELETON LOADING ============
@@ -2159,6 +2216,8 @@ function renderDashboard() {
     renderExamChecklist();
     // Alerta gentil de exames pendentes (1x por sessão)
     renderExamAlert();
+    // Resultados laboratoriais no dashboard
+    renderLabResults();
     // FEAT-004: Kick counter
     renderKickCounter();
 
@@ -2184,9 +2243,9 @@ function renderDashboard() {
         timelineItems.push({ type: 'us', date: us.date, data: us });
     });
     var exams = [];
-    try { exams = JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); } catch(e) {}
+    try { exams = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); } catch(e) {}
     exams.forEach(function(ex) {
-        if (ex.status === 'done') {
+        if (ex.status === 'done' || ex.status === 'scheduled') {
             timelineItems.push({ type: 'exam', date: ex.date, data: ex });
         }
     });
