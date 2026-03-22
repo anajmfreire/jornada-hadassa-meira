@@ -1129,7 +1129,19 @@ function attachExamListeners(container) {
             document.getElementById('examScheduledGroup').style.display = ex.status !== 'done' ? 'block' : 'none';
             toggleExamFields(ex.type);
             clearSpecificFields();
-            fillSpecificFields(ex.type, ex.specificData);
+            // Só preencher specificData se tem valores válidos (não lixo do parsing antigo)
+            if (ex.specificData) {
+                var cleanData = {};
+                var hasClean = false;
+                Object.keys(ex.specificData).forEach(function(k) {
+                    var v = ex.specificData[k];
+                    if (v && !v.endsWith(':') && !/^[A-Z_]+:?$/i.test(v)) {
+                        cleanData[k] = v;
+                        hasClean = true;
+                    }
+                });
+                if (hasClean) fillSpecificFields(ex.type, cleanData);
+            }
             openModal('examModal');
         });
     });
@@ -1775,22 +1787,33 @@ function scheduleAllNotifications() {
 
 // ============ OCR: EXTRACT EXAM DATA FROM IMAGE VIA GEMINI ============
 function extractExamData(imageBase64) {
-    // Remove data URI prefix to get raw base64
     var base64Data = imageBase64.replace(/^data:[^;]+;base64,/, '');
     var mimeType = imageBase64.match(/^data:([^;]+);/) ? imageBase64.match(/^data:([^;]+);/)[1] : 'image/jpeg';
 
+    var prompt = 'Analise esta imagem de exame médico/laboratorial. Extraia TODOS os dados encontrados.\n\n';
+    prompt += 'Responda APENAS com um JSON válido, sem markdown, sem ```json, apenas o objeto JSON puro.\n';
+    prompt += 'Use null para campos não encontrados. Exemplo:\n';
+    prompt += '{"tipo":"blood","titulo":"Hemograma","data":"2026-01-15","medico":"Dr. Silva","laboratorio":"Lab X",';
+    prompt += '"hemoglobina":"13.6","hematocrito":"38.8","eritrocitos":"4","leucocitos":"8470","plaquetas":"250000",';
+    prompt += '"vcm":"92.8","hcm":"32.5","chcm":"35.1","rdw":"13.4",';
+    prompt += '"glicose":"75","grupo_sanguineo":"A","coombs":"Negativo","tsh":null,';
+    prompt += '"hiv":"Não reagente","vdrl":"Não reagente","hepatite_b":"Não reagente","hepatite_c":"Não reagente",';
+    prompt += '"toxo_igg":"Reagente","toxo_igm":"Não reagente","rubeola_igg":"Reagente","cmv_igg":"Reagente",';
+    prompt += '"glicose_jejum":null,"glicose_1h":null,"glicose_2h":null,';
+    prompt += '"batimentos":null,"peso_fetal":null,"femur":null,"ccn":null,"dbp":null,"ca":null,';
+    prompt += '"colo":null,"ila":null,"placenta":null,"ig_semanas":null,"ig_dias":null,';
+    prompt += '"ph_urina":null,"proteina_urina":null,"leucocitos_urina":null,"urocultura":null,';
+    prompt += '"outros":"qualquer resultado extra não listado acima, cada um em linha separada"}';
+
     var body = {
         model: 'gemini-2.0-flash',
-        contents: [{
-            parts: [
-                { text: 'Analise esta imagem de exame médico/laboratorial de pré-natal. Extraia TODAS as informações. Retorne EXATAMENTE neste formato (deixe vazio se não encontrar):\n\nTIPO: (blood/routine/glucose/us/prescription/other)\nTÍTULO: (nome do exame)\nDATA: (YYYY-MM-DD)\nMÉDICO: (nome)\nLABORATÓRIO: (nome)\nHEMOGLOBINA: (valor numérico ex: 13.6)\nHEMATÓCRITO: (valor ex: 38.8)\nERITRÓCITOS: (valor ex: 4)\nLEUCÓCITOS: (valor ex: 8470)\nPLAQUETAS: (valor ex: 250000)\nVCM: (valor)\nHCM: (valor)\nCHCM: (valor)\nRDW: (valor)\nGLICOSE: (valor ex: 75)\nGRUPO_SANGUINEO: (ex: A+)\nCOOMBS: (ex: Negativo)\nTSH: (valor)\nHIV: (resultado)\nVDRL: (resultado)\nHEPATITE_B: (resultado)\nHEPATITE_C: (resultado)\nTOXO_IGG: (resultado)\nTOXO_IGM: (resultado)\nRUBEOLA_IGG: (resultado)\nCMV_IGG: (resultado)\nGLICOSE_JEJUM: (valor TOTG)\nGLICOSE_1H: (valor TOTG)\nGLICOSE_2H: (valor TOTG)\nBATIMENTOS: (bpm)\nPESO_FETAL: (gramas)\nFEMUR: (mm)\nCCN: (mm)\nDBP: (mm)\nCA: (mm)\nCOLO: (mm)\nILA: (cm)\nPLACENTA: (descrição)\nIG_SEMANAS: (semanas)\nIG_DIAS: (dias)\nPH_URINA: (valor)\nPROTEINA_URINA: (resultado)\nLEUCOCITOS_URINA: (resultado)\nUROCULTURA: (resultado)\nRESULTADOS:\n(outros resultados não listados acima, um por linha)' },
-                { inline_data: { mime_type: mimeType, data: base64Data } }
-            ]
-        }],
+        contents: [{ parts: [
+            { text: prompt },
+            { inline_data: { mime_type: mimeType, data: base64Data } }
+        ]}],
         generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
     };
 
-    // Usar proxy em producao, direto em localhost
     var url;
     if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         url = 'https://gemini-proxy.anajmfreire.workers.dev';
@@ -1813,48 +1836,47 @@ function extractExamData(imageBase64) {
             data.candidates[0].content.parts[0].text;
         if (!text) return null;
 
-        // Parse the response
+        // Limpar markdown se a IA envolveu em ```json
+        text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+
+        var parsed;
+        try { parsed = JSON.parse(text); } catch(e) {
+            Logger.error('OCR JSON parse error:', e, text);
+            return null;
+        }
+
+        // Mapear JSON para resultado
         var result = {};
-        var typeMatch = text.match(/TIPO:\s*(.+)/i);
-        var titleMatch = text.match(/T[ÍI]TULO:\s*(.+)/i);
-        var dateMatch = text.match(/DATA:\s*(\d{4}-\d{2}-\d{2})/i);
-        var doctorMatch = text.match(/M[ÉE]DICO:\s*(.+)/i);
-        var labMatch = text.match(/LABORAT[ÓO]RIO:\s*(.+)/i);
-        var resultsMatch = text.match(/RESULTADOS:\s*([\s\S]+)/i);
+        if (parsed.tipo) result.type = parsed.tipo;
+        if (parsed.titulo) result.title = parsed.titulo;
+        if (parsed.data) result.date = parsed.data;
+        if (parsed.medico) result.doctor = parsed.medico;
+        if (parsed.laboratorio) result.lab = parsed.laboratorio;
+        if (parsed.outros) result.results = parsed.outros;
 
-        if (typeMatch) result.type = typeMatch[1].trim().toLowerCase();
-        if (titleMatch) result.title = titleMatch[1].trim();
-        if (dateMatch) result.date = dateMatch[1].trim();
-        if (doctorMatch) result.doctor = doctorMatch[1].trim();
-        if (labMatch) result.lab = labMatch[1].trim();
-        if (resultsMatch) result.results = resultsMatch[1].trim();
-
-        // Mapear campos específicos da resposta da IA para IDs dos inputs
-        var fieldMap = {
-            'HEMOGLOBINA': 'exBloodHb', 'HEMATÓCRITO': 'exBloodHt', 'HEMATOCRITO': 'exBloodHt',
-            'ERITRÓCITOS': 'exBloodEri', 'ERITROCITOS': 'exBloodEri',
-            'LEUCÓCITOS': 'exBloodLeu', 'LEUCOCITOS': 'exBloodLeu',
-            'PLAQUETAS': 'exBloodPlq', 'VCM': 'exBloodVcm', 'HCM': 'exBloodHcm',
-            'CHCM': 'exBloodChcm', 'RDW': 'exBloodRdw', 'GLICOSE': 'exBloodGli',
-            'GRUPO_SANGUINEO': 'exBloodAbo', 'COOMBS': 'exBloodCoombs', 'TSH': 'exBloodTsh',
-            'HIV': 'exBloodHiv', 'VDRL': 'exBloodVdrl',
-            'HEPATITE_B': 'exBloodHepb', 'HEPATITE_C': 'exBloodHepc',
-            'TOXO_IGG': 'exBloodToxoG', 'TOXO_IGM': 'exBloodToxoM',
-            'RUBEOLA_IGG': 'exBloodRubG', 'CMV_IGG': 'exBloodCmvG',
-            'GLICOSE_JEJUM': 'exGluFast', 'GLICOSE_1H': 'exGlu1h', 'GLICOSE_2H': 'exGlu2h',
-            'BATIMENTOS': 'exUsHeart', 'PESO_FETAL': 'exUsWeight',
-            'FEMUR': 'exUsFemur', 'CCN': 'exUsCcn', 'DBP': 'exUsDbp', 'CA': 'exUsCa',
-            'COLO': 'exUsCervix', 'ILA': 'exUsIla', 'PLACENTA': 'exUsPlacenta',
-            'IG_SEMANAS': 'exUsWeeks', 'IG_DIAS': 'exUsDays',
-            'PH_URINA': 'exUrinePh', 'PROTEINA_URINA': 'exUrineProtein',
-            'LEUCOCITOS_URINA': 'exUrineLeu', 'UROCULTURA': 'exUrineCulture'
+        // Mapear campos JSON para IDs dos inputs do formulário
+        var jsonToField = {
+            hemoglobina: 'exBloodHb', hematocrito: 'exBloodHt', eritrocitos: 'exBloodEri',
+            leucocitos: 'exBloodLeu', plaquetas: 'exBloodPlq', vcm: 'exBloodVcm',
+            hcm: 'exBloodHcm', chcm: 'exBloodChcm', rdw: 'exBloodRdw',
+            glicose: 'exBloodGli', grupo_sanguineo: 'exBloodAbo', coombs: 'exBloodCoombs',
+            tsh: 'exBloodTsh', hiv: 'exBloodHiv', vdrl: 'exBloodVdrl',
+            hepatite_b: 'exBloodHepb', hepatite_c: 'exBloodHepc',
+            toxo_igg: 'exBloodToxoG', toxo_igm: 'exBloodToxoM',
+            rubeola_igg: 'exBloodRubG', cmv_igg: 'exBloodCmvG',
+            glicose_jejum: 'exGluFast', glicose_1h: 'exGlu1h', glicose_2h: 'exGlu2h',
+            batimentos: 'exUsHeart', peso_fetal: 'exUsWeight',
+            femur: 'exUsFemur', ccn: 'exUsCcn', dbp: 'exUsDbp', ca: 'exUsCa',
+            colo: 'exUsCervix', ila: 'exUsIla', placenta: 'exUsPlacenta',
+            ig_semanas: 'exUsWeeks', ig_dias: 'exUsDays',
+            ph_urina: 'exUrinePh', proteina_urina: 'exUrineProtein',
+            leucocitos_urina: 'exUrineLeu', urocultura: 'exUrineCulture'
         };
         result.specificFields = {};
-        Object.keys(fieldMap).forEach(function(key) {
-            var regex = new RegExp(key + ':\\s*(.+)', 'i');
-            var match = text.match(regex);
-            if (match && match[1].trim() && match[1].trim() !== '' && match[1].trim().toLowerCase() !== 'n/a') {
-                result.specificFields[fieldMap[key]] = match[1].trim();
+        Object.keys(jsonToField).forEach(function(key) {
+            var val = parsed[key];
+            if (val !== null && val !== undefined && String(val).trim() !== '') {
+                result.specificFields[jsonToField[key]] = String(val).trim();
             }
         });
 
