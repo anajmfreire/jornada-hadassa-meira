@@ -149,7 +149,7 @@
                 'hadassa_list_doctorQuestions', 'hadassa_list_birthPlan',
                 'hadassa_weekly_todos', 'hadassa_letter_to_baby', 'hadassa_hydration',
                 'hadassa_sample_loaded', 'hadassa_onboarding_done', 'hadassa_disclaimer_shown',
-                'hadassa_theme', 'hadassa_motivation_date'
+                'hadassa_theme', 'hadassa_motivation_date', 'hadassa_exam_unchecked'
             ];
 
             extraKeys.forEach(function(key) {
