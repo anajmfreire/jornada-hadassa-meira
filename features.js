@@ -1166,53 +1166,68 @@ function showExamDetail(ex) {
     if (ex.lab) html += '<div style="font-size:0.85em;color:var(--text-medium);margin-bottom:4px;"><strong>Local:</strong> ' + escapeHtml(ex.lab) + '</div>';
     html += '</div>';
 
-    // Mostrar campos específicos primeiro (se existem)
-    if (ex.specificData && Object.keys(ex.specificData).length > 0) {
-        // Labels legíveis para cada campo
-        var fieldLabels = {
-            exBloodHb: 'Hemoglobina', exBloodHt: 'Hematócrito', exBloodEri: 'Eritrócitos',
-            exBloodLeu: 'Leucócitos', exBloodPlq: 'Plaquetas', exBloodVcm: 'VCM',
-            exBloodHcm: 'HCM', exBloodChcm: 'CHCM', exBloodRdw: 'RDW',
-            exBloodGli: 'Glicose', exBloodAbo: 'Tipo Sanguíneo', exBloodCoombs: 'Coombs Indireto',
-            exBloodTsh: 'TSH', exBloodHiv: 'HIV', exBloodVdrl: 'Sífilis (VDRL)',
-            exBloodHepb: 'Hepatite B', exBloodHepc: 'Hepatite C',
-            exBloodToxoG: 'Toxoplasmose IgG', exBloodToxoM: 'Toxoplasmose IgM',
-            exBloodRubG: 'Rubéola IgG', exBloodCmvG: 'CMV IgG',
-            exUsWeeks: 'Semanas', exUsDays: 'Dias', exUsHeart: 'Batimentos',
-            exUsWeight: 'Peso Fetal', exUsFemur: 'Fêmur', exUsCcn: 'CCN',
-            exUsDbp: 'DBP', exUsCa: 'CA', exUsCervix: 'Colo Uterino',
-            exUsIla: 'ILA', exUsPlacenta: 'Placenta',
-            exGluFast: 'Jejum', exGlu1h: '1 hora', exGlu2h: '2 horas',
-            exUrinePh: 'pH', exUrineProtein: 'Proteínas', exUrineLeu: 'Leucócitos', exUrineCulture: 'Urocultura'
-        };
+    // Labels legíveis para campos específicos
+    var fieldLabels = {
+        exBloodHb: 'Hemoglobina', exBloodHt: 'Hematócrito', exBloodEri: 'Eritrócitos',
+        exBloodLeu: 'Leucócitos', exBloodPlq: 'Plaquetas', exBloodVcm: 'VCM',
+        exBloodHcm: 'HCM', exBloodChcm: 'CHCM', exBloodRdw: 'RDW',
+        exBloodGli: 'Glicose', exBloodAbo: 'Tipo Sanguíneo', exBloodCoombs: 'Coombs Indireto',
+        exBloodTsh: 'TSH', exBloodHiv: 'HIV', exBloodVdrl: 'Sífilis (VDRL)',
+        exBloodHepb: 'Hepatite B', exBloodHepc: 'Hepatite C',
+        exBloodToxoG: 'Toxoplasmose IgG', exBloodToxoM: 'Toxoplasmose IgM',
+        exBloodRubG: 'Rubéola IgG', exBloodCmvG: 'CMV IgG',
+        exUsWeeks: 'Semanas', exUsDays: 'Dias', exUsHeart: 'Batimentos',
+        exUsWeight: 'Peso Fetal', exUsFemur: 'Fêmur', exUsCcn: 'CCN',
+        exUsDbp: 'DBP', exUsCa: 'CA', exUsCervix: 'Colo Uterino',
+        exUsIla: 'ILA', exUsPlacenta: 'Placenta',
+        exGluFast: 'Jejum', exGlu1h: '1 hora', exGlu2h: '2 horas',
+        exUrinePh: 'pH', exUrineProtein: 'Proteínas', exUrineLeu: 'Leucócitos', exUrineCulture: 'Urocultura'
+    };
+
+    // Verificar se specificData tem valores reais (não só chaves/labels)
+    var hasValidSpecificData = ex.specificData && Object.keys(ex.specificData).some(function(key) {
+        var val = ex.specificData[key];
+        // Valor inválido se é vazio, se parece com nome de campo, ou se termina com ':'
+        return val && val.length > 0 && !val.endsWith(':') && !/^[A-Z_]+:?$/.test(val);
+    });
+
+    // Sempre mostrar resultados parseando o texto
+    var hasResults = hasValidSpecificData || (ex.results && ex.results.trim());
+    if (hasResults) {
         html += '<div style="font-weight:700;color:var(--pink-600);margin-bottom:8px;">Resultados</div>';
         html += '<div style="background:var(--pink-50);border-radius:10px;padding:12px;">';
-        Object.keys(ex.specificData).forEach(function(key) {
-            var label = fieldLabels[key] || key;
-            html += '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);font-size:0.85em;">';
-            html += '<span style="color:var(--text-medium);font-weight:500;">' + escapeHtml(label) + '</span>';
-            html += '<span style="color:var(--text-dark);font-weight:700;">' + escapeHtml(ex.specificData[key]) + '</span>';
-            html += '</div>';
-        });
-        html += '</div>';
-    } else if (ex.results) {
-        html += '<div style="font-weight:700;color:var(--pink-600);margin-bottom:8px;">Resultados</div>';
-        var lines = ex.results.split('\n').filter(function(l) { return l.trim(); });
-        html += '<div style="background:var(--pink-50);border-radius:10px;padding:12px;">';
-        lines.forEach(function(line) {
-            var trimmed = line.trim();
-            var colonIdx = trimmed.indexOf(':');
-            if (colonIdx > 0 && colonIdx < trimmed.length - 1) {
-                var name = trimmed.substring(0, colonIdx).trim();
-                var value = trimmed.substring(colonIdx + 1).trim();
-                html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.05);font-size:0.82em;">';
-                html += '<span style="color:var(--text-medium);font-weight:500;">' + escapeHtml(name) + '</span>';
-                html += '<span style="color:var(--text-dark);font-weight:600;">' + escapeHtml(value) + '</span>';
+
+        if (hasValidSpecificData) {
+            Object.keys(ex.specificData).forEach(function(key) {
+                var val = ex.specificData[key];
+                if (!val || val.endsWith(':') || /^[A-Z_]+:?$/.test(val)) return;
+                var label = fieldLabels[key] || key;
+                html += '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);font-size:0.85em;">';
+                html += '<span style="color:var(--text-medium);font-weight:500;">' + escapeHtml(label) + '</span>';
+                html += '<span style="color:var(--text-dark);font-weight:700;">' + escapeHtml(val) + '</span>';
                 html += '</div>';
-            } else {
-                html += '<div style="padding:4px 0;font-size:0.82em;color:var(--text-dark);">' + escapeHtml(trimmed) + '</div>';
-            }
-        });
+            });
+        }
+
+        // Se tem results texto, parsear e mostrar
+        if (ex.results && ex.results.trim()) {
+            var lines = ex.results.split('\n').filter(function(l) { return l.trim(); });
+            lines.forEach(function(line) {
+                var trimmed = line.trim();
+                var colonIdx = trimmed.indexOf(':');
+                if (colonIdx > 0 && colonIdx < trimmed.length - 1) {
+                    var name = trimmed.substring(0, colonIdx).trim();
+                    var value = trimmed.substring(colonIdx + 1).trim();
+                    html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.05);font-size:0.82em;">';
+                    html += '<span style="color:var(--text-medium);font-weight:500;">' + escapeHtml(name) + '</span>';
+                    html += '<span style="color:var(--text-dark);font-weight:600;">' + escapeHtml(value) + '</span>';
+                    html += '</div>';
+                } else if (trimmed) {
+                    html += '<div style="padding:4px 0;font-size:0.82em;color:var(--text-dark);">' + escapeHtml(trimmed) + '</div>';
+                }
+            });
+        }
+
         html += '</div>';
     }
 
