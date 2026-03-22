@@ -3,6 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+    // Forçar atualização do Service Worker e limpar cache antigo
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        caches.keys().then(function(keys) {
+            keys.forEach(function(key) {
+                if (key.indexOf('hadassa-meira-v') !== -1 && key !== 'hadassa-meira-v17') {
+                    caches.delete(key);
+                }
+            });
+        });
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+            regs.forEach(function(r) { r.update(); });
+        });
+    }
+    </script>
     <title>A Jornada de Hadassa Meira</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
