@@ -131,6 +131,19 @@
         // ============ SYNC TO CLOUD ============
         function syncToCloud() {
             if (!currentUser || !syncEnabled || isSyncing || !db) return;
+
+            // PROTEÇÃO: Não enviar dados vazios para a nuvem (evita perda de dados)
+            var hasData = (appData.ultrasounds && appData.ultrasounds.length > 0) ||
+                          (appData.appointments && appData.appointments.length > 0) ||
+                          (appData.notes && appData.notes.length > 0) ||
+                          localStorage.getItem('hadassa_exams');
+            var hasCloudData = localStorage.getItem('hadassa_last_sync');
+            if (!hasData && hasCloudData) {
+                // Dados locais estão vazios mas já houve sync antes - NÃO sobrescrever nuvem
+                setSyncStatus('Aguardando dados...');
+                return;
+            }
+
             isSyncing = true;
             setSyncStatus('Salvando...');
 
