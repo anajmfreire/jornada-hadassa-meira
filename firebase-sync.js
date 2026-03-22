@@ -196,6 +196,12 @@
 
                     appData = cloudData.appData;
 
+                    // Garantir arrays obrigatórios existem (dados antigos podem não ter)
+                    if (!appData.config) appData.config = {};
+                    if (!appData.ultrasounds) appData.ultrasounds = [];
+                    if (!appData.appointments) appData.appointments = [];
+                    if (!appData.notes) appData.notes = [];
+
                     // Restaurar configs de data locais (o usuário tem controle total)
                     if (localDum) appData.config.dum = localDum;
                     if (localDpp) appData.config.dpp = localDpp;

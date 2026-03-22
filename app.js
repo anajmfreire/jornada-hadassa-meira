@@ -55,11 +55,11 @@ function getDefaultData() {
 }
 
 function migrateData(data) {
-    if (!data.version) {
-        data.version = DATA_VERSION;
-        if (!data.appointments) data.appointments = [];
-        if (!data.notes) data.notes = [];
-    }
+    data.version = data.version || DATA_VERSION;
+    if (!data.config) data.config = getDefaultData().config;
+    if (!data.ultrasounds) data.ultrasounds = [];
+    if (!data.appointments) data.appointments = [];
+    if (!data.notes) data.notes = [];
     return data;
 }
 
@@ -1082,13 +1082,13 @@ function showSkeleton(containerId, count) {
 
 // ============ UX-017: ACHIEVEMENTS / GAMIFICATION ============
 var achievementDefs = [
-    { id: 'first_us', icon: '\u{1F4F8}', title: 'Primeiro Registro', desc: 'Registrou o primeiro ultrassom', check: function() { return appData.ultrasounds.length >= 1; } },
-    { id: 'heartbeat', icon: '\u{1F49C}', title: 'Coração Batendo', desc: 'Registrou batimentos cardíacos', check: function() { return appData.ultrasounds.some(function(u) { return u.heartbeat; }); } },
+    { id: 'first_us', icon: '\u{1F4F8}', title: 'Primeiro Registro', desc: 'Registrou o primeiro ultrassom', check: function() { return (appData.ultrasounds || []).length >= 1; } },
+    { id: 'heartbeat', icon: '\u{1F49C}', title: 'Coração Batendo', desc: 'Registrou batimentos cardíacos', check: function() { return (appData.ultrasounds || []).some(function(u) { return u.heartbeat; }); } },
     { id: 'halfway', icon: '\u{1F389}', title: 'Metade do Caminho', desc: 'Atingiu 20 semanas', check: function() { var i = calcCurrentGestationalAge(); return i ? i.weeks >= 20 : false; } },
-    { id: 'five_apps', icon: '\u{1F4C5}', title: 'Mãe Organizada', desc: '5 consultas registradas', check: function() { return appData.appointments.length >= 5; } },
-    { id: 'ten_notes', icon: '\u{1F4D6}', title: 'Diário Completo', desc: '10 anotações feitas', check: function() { return appData.notes.length >= 10; } },
-    { id: 'three_us', icon: '\u{1F4CA}', title: 'Acompanhamento', desc: '3 ultrassons registrados', check: function() { return appData.ultrasounds.length >= 3; } },
-    { id: 'weight_track', icon: '\u{2696}\u{FE0F}', title: 'Controlando o Peso', desc: 'Registrou peso em uma consulta', check: function() { return appData.appointments.some(function(a) { return a.momWeight; }); } },
+    { id: 'five_apps', icon: '\u{1F4C5}', title: 'Mãe Organizada', desc: '5 consultas registradas', check: function() { return (appData.appointments || []).length >= 5; } },
+    { id: 'ten_notes', icon: '\u{1F4D6}', title: 'Diário Completo', desc: '10 anotações feitas', check: function() { return (appData.notes || []).length >= 10; } },
+    { id: 'three_us', icon: '\u{1F4CA}', title: 'Acompanhamento', desc: '3 ultrassons registrados', check: function() { return (appData.ultrasounds || []).length >= 3; } },
+    { id: 'weight_track', icon: '\u{2696}\u{FE0F}', title: 'Controlando o Peso', desc: 'Registrou peso em uma consulta', check: function() { return (appData.appointments || []).some(function(a) { return a.momWeight; }); } },
     { id: 'third_tri', icon: '\u{1F31F}', title: 'Reta Final', desc: 'Entrou no 3º trimestre', check: function() { var i = calcCurrentGestationalAge(); return i ? i.weeks >= 28 : false; } }
 ];
 
