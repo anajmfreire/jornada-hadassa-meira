@@ -132,15 +132,32 @@
         function syncToCloud() {
             if (!currentUser || !syncEnabled || isSyncing || !db) return;
 
-            // PROTEÇÃO: Não enviar dados vazios para a nuvem (evita perda de dados)
-            var hasData = (appData.ultrasounds && appData.ultrasounds.length > 0) ||
-                          (appData.appointments && appData.appointments.length > 0) ||
-                          (appData.notes && appData.notes.length > 0) ||
-                          localStorage.getItem('hadassa_exams');
-            var hasCloudData = localStorage.getItem('hadassa_last_sync');
-            if (!hasData && hasCloudData) {
-                // Dados locais estão vazios mas já houve sync antes - NÃO sobrescrever nuvem
-                setSyncStatus('Aguardando dados...');
+            // PROTEÇÃO CRÍTICA: NUNCA enviar dados vazios para a nuvem
+            // Isso evita perda de dados quando o usuário limpa cache do navegador
+            var localExams = localStorage.getItem('hadassa_exams');
+            var localExamCount = 0;
+            try { localExamCount = localExams ? JSON.parse(localExams).length : 0; } catch(e) {}
+            var hasLocalData = (appData.ultrasounds && appData.ultrasounds.length > 0) ||
+                               (appData.appointments && appData.appointments.length > 0) ||
+                               (appData.notes && appData.notes.length > 0) ||
+                               localExamCount > 0;
+            if (!hasLocalData) {
+                // Dados locais estão VAZIOS - verificar se a nuvem tem dados antes de sobrescrever
+                db.ref('users/' + currentUser.uid + '/data/appData').once('value').then(function(snap) {
+                    var cloudAppData = snap.val();
+                    if (cloudAppData && (
+                        (cloudAppData.ultrasounds && cloudAppData.ultrasounds.length > 0) ||
+                        (cloudAppData.appointments && cloudAppData.appointments.length > 0) ||
+                        (cloudAppData.notes && cloudAppData.notes.length > 0)
+                    )) {
+                        // Nuvem TEM dados, local NÃO - baixar da nuvem em vez de enviar
+                        console.warn('PROTEÇÃO: Dados locais vazios, nuvem tem dados. Baixando da nuvem...');
+                        setSyncStatus('Recuperando dados...');
+                        syncFromCloud();
+                    } else {
+                        setSyncStatus('Sem dados para sincronizar');
+                    }
+                });
                 return;
             }
 
