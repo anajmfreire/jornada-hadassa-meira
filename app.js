@@ -2899,7 +2899,14 @@ function getGeminiApiKey() {
     return _geminiApiKey || '';
 }
 
+var GEMINI_PROXY_URL = 'https://gemini-proxy.anajmfreire.workers.dev';
+
 function getGeminiUrl() {
+    // Em producao usa o proxy (chave segura no servidor)
+    if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        return GEMINI_PROXY_URL;
+    }
+    // Em localhost usa direto com chave local
     var key = getGeminiApiKey();
     return 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + key;
 }
@@ -3073,9 +3080,12 @@ function sendAIMessage() {
     }
     lastAICallTime = now;
 
-    if (!getGeminiApiKey()) {
-        addAIMessage('assistant', 'Chave da API não encontrada. Verifique se o arquivo .env existe na raiz do projeto com GEMINI_API_KEY=sua_chave');
-        return;
+    // Em localhost verifica .env, em producao usa proxy
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        if (!getGeminiApiKey()) {
+            addAIMessage('assistant', 'Chave da API não encontrada. Verifique o arquivo .env');
+            return;
+        }
     }
 
     input.value = '';
@@ -3096,6 +3106,9 @@ function sendAIMessage() {
             { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }
         ]
     };
+
+    // Adicionar modelo ao body para o proxy saber qual usar
+    body.model = GEMINI_MODEL;
 
     fetch(getGeminiUrl(), {
         method: 'POST',

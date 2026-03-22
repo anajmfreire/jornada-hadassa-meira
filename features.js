@@ -1574,26 +1574,30 @@ function scheduleAllNotifications() {
 
 // ============ OCR: EXTRACT EXAM DATA FROM IMAGE VIA GEMINI ============
 function extractExamData(imageBase64) {
-    var apiKey = getGeminiApiKey();
-    if (!apiKey) {
-        showToast('Configure a chave da API Gemini no .env para usar OCR.', 5000);
-        return Promise.resolve(null);
-    }
-
     // Remove data URI prefix to get raw base64
-    var base64Data = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+    var base64Data = imageBase64.replace(/^data:[^;]+;base64,/, '');
+    var mimeType = imageBase64.match(/^data:([^;]+);/) ? imageBase64.match(/^data:([^;]+);/)[1] : 'image/jpeg';
 
     var body = {
+        model: 'gemini-2.0-flash',
         contents: [{
             parts: [
                 { text: 'Analise esta imagem de exame médico/laboratorial. Extraia TODAS as informações contidas: nome do exame, data, médico solicitante, laboratório, e TODOS os resultados com valores e unidades. Retorne no formato:\n\nTIPO: (blood/routine/glucose/us/prescription/other)\nTÍTULO: (nome do exame)\nDATA: (YYYY-MM-DD se encontrar)\nMÉDICO: (nome se encontrar)\nLABORATÓRIO: (nome se encontrar)\nRESULTADOS:\n(liste todos os resultados encontrados, um por linha, com valor e referência se disponível)' },
-                { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
+                { inline_data: { mime_type: mimeType, data: base64Data } }
             ]
         }],
         generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
     };
 
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+    // Usar proxy em producao, direto em localhost
+    var url;
+    if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        url = 'https://gemini-proxy.anajmfreire.workers.dev';
+    } else {
+        var apiKey = getGeminiApiKey();
+        if (!apiKey) { showToast('Configure a API key no .env', 5000); return Promise.resolve(null); }
+        url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+    }
 
     return fetch(url, {
         method: 'POST',
@@ -1791,11 +1795,6 @@ var breastfeedingContent = [
                 preview.appendChild(ocrDiv);
 
                 document.getElementById('btnOcrExtract').addEventListener('click', function() {
-                    if (!getGeminiApiKey()) {
-                        showToast('Configure a chave da API Gemini em Configurações', 5000);
-                        return;
-                    }
-
                     ocrDiv.innerHTML = '<div style="padding:12px;font-size:0.85em;color:var(--pink-600);"><i class="fas fa-spinner fa-spin"></i> Analisando documento com IA... aguarde</div>';
 
                     extractExamData(imageData).then(function(result) {
