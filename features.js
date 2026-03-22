@@ -907,6 +907,66 @@ function saveCustomSymptoms(list) {
 }
 
 // ============ EXAMS SECTION ============
+
+// Toggle campos específicos por tipo de exame
+function toggleExamFields(type) {
+    var sections = ['examFieldsBlood', 'examFieldsUS', 'examFieldsGlucose', 'examFieldsRoutine'];
+    sections.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    var map = { blood: 'examFieldsBlood', us: 'examFieldsUS', glucose: 'examFieldsGlucose', routine: 'examFieldsRoutine' };
+    if (map[type]) {
+        var el = document.getElementById(map[type]);
+        if (el) el.style.display = 'block';
+    }
+}
+
+// IDs dos campos específicos por tipo
+var examSpecificFields = {
+    blood: ['exBloodHb','exBloodHt','exBloodEri','exBloodLeu','exBloodPlq','exBloodVcm','exBloodHcm','exBloodChcm','exBloodRdw','exBloodGli','exBloodAbo','exBloodCoombs','exBloodTsh','exBloodHiv','exBloodVdrl','exBloodHepb','exBloodHepc','exBloodToxoG','exBloodToxoM','exBloodRubG','exBloodCmvG'],
+    us: ['exUsWeeks','exUsDays','exUsHeart','exUsWeight','exUsFemur','exUsCcn','exUsDbp','exUsCa','exUsCervix','exUsIla','exUsPlacenta'],
+    glucose: ['exGluFast','exGlu1h','exGlu2h'],
+    routine: ['exUrinePh','exUrineProtein','exUrineLeu','exUrineCulture']
+};
+
+// Coletar valores dos campos específicos
+function collectSpecificFields(type) {
+    var fields = examSpecificFields[type];
+    if (!fields) return null;
+    var data = {};
+    var hasData = false;
+    fields.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && el.value.trim()) {
+            data[id] = el.value.trim();
+            hasData = true;
+        }
+    });
+    return hasData ? data : null;
+}
+
+// Preencher campos específicos a partir de dados salvos
+function fillSpecificFields(type, data) {
+    if (!data) return;
+    var fields = examSpecificFields[type];
+    if (!fields) return;
+    fields.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = data[id] || '';
+    });
+}
+
+// Limpar todos os campos específicos
+function clearSpecificFields() {
+    Object.keys(examSpecificFields).forEach(function(type) {
+        examSpecificFields[type].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+    });
+}
+
 function getExams() {
     var saved = localStorage.getItem('hadassa_exams');
     if (saved) { try { return JSON.parse(saved); } catch(e) {} }
@@ -922,9 +982,10 @@ function saveExamEntry(e) {
     var editId = document.getElementById('examEditId').value;
     var preview = document.getElementById('examFilePreview');
 
+    var examType = document.getElementById('examType').value;
     var exam = {
         id: editId || genId(),
-        type: document.getElementById('examType').value,
+        type: examType,
         title: document.getElementById('examTitle').value,
         date: document.getElementById('examDate').value,
         doctor: document.getElementById('examDoctor').value,
@@ -932,8 +993,23 @@ function saveExamEntry(e) {
         results: document.getElementById('examResults').value,
         status: document.getElementById('examStatus').value,
         scheduledDate: document.getElementById('examScheduledDate').value,
-        fileId: preview.dataset.photoId || null
+        fileId: preview.dataset.photoId || null,
+        specificData: collectSpecificFields(examType)
     };
+
+    // Gerar texto de resultados a partir dos campos específicos se vazio
+    if (!exam.results && exam.specificData) {
+        var lines = [];
+        Object.keys(exam.specificData).forEach(function(key) {
+            // Pegar o label do campo para gerar texto legível
+            var el = document.getElementById(key);
+            if (el && el.parentElement) {
+                var label = el.parentElement.querySelector('label');
+                if (label) lines.push(label.textContent.trim() + ': ' + exam.specificData[key]);
+            }
+        });
+        exam.results = lines.join('\n');
+    }
 
     var exams = getExams();
     if (editId) {
@@ -1050,6 +1126,10 @@ function attachExamListeners(container) {
             document.getElementById('examResults').value = ex.results || '';
             document.getElementById('examStatus').value = ex.status || 'done';
             document.getElementById('examScheduledDate').value = ex.scheduledDate || '';
+            document.getElementById('examScheduledGroup').style.display = ex.status !== 'done' ? 'block' : 'none';
+            toggleExamFields(ex.type);
+            clearSpecificFields();
+            fillSpecificFields(ex.type, ex.specificData);
             openModal('examModal');
         });
     });
@@ -1086,14 +1166,41 @@ function showExamDetail(ex) {
     if (ex.lab) html += '<div style="font-size:0.85em;color:var(--text-medium);margin-bottom:4px;"><strong>Local:</strong> ' + escapeHtml(ex.lab) + '</div>';
     html += '</div>';
 
-    if (ex.results) {
+    // Mostrar campos específicos primeiro (se existem)
+    if (ex.specificData && Object.keys(ex.specificData).length > 0) {
+        // Labels legíveis para cada campo
+        var fieldLabels = {
+            exBloodHb: 'Hemoglobina', exBloodHt: 'Hematócrito', exBloodEri: 'Eritrócitos',
+            exBloodLeu: 'Leucócitos', exBloodPlq: 'Plaquetas', exBloodVcm: 'VCM',
+            exBloodHcm: 'HCM', exBloodChcm: 'CHCM', exBloodRdw: 'RDW',
+            exBloodGli: 'Glicose', exBloodAbo: 'Tipo Sanguíneo', exBloodCoombs: 'Coombs Indireto',
+            exBloodTsh: 'TSH', exBloodHiv: 'HIV', exBloodVdrl: 'Sífilis (VDRL)',
+            exBloodHepb: 'Hepatite B', exBloodHepc: 'Hepatite C',
+            exBloodToxoG: 'Toxoplasmose IgG', exBloodToxoM: 'Toxoplasmose IgM',
+            exBloodRubG: 'Rubéola IgG', exBloodCmvG: 'CMV IgG',
+            exUsWeeks: 'Semanas', exUsDays: 'Dias', exUsHeart: 'Batimentos',
+            exUsWeight: 'Peso Fetal', exUsFemur: 'Fêmur', exUsCcn: 'CCN',
+            exUsDbp: 'DBP', exUsCa: 'CA', exUsCervix: 'Colo Uterino',
+            exUsIla: 'ILA', exUsPlacenta: 'Placenta',
+            exGluFast: 'Jejum', exGlu1h: '1 hora', exGlu2h: '2 horas',
+            exUrinePh: 'pH', exUrineProtein: 'Proteínas', exUrineLeu: 'Leucócitos', exUrineCulture: 'Urocultura'
+        };
         html += '<div style="font-weight:700;color:var(--pink-600);margin-bottom:8px;">Resultados</div>';
-        // Formatar resultados em tabela estruturada
+        html += '<div style="background:var(--pink-50);border-radius:10px;padding:12px;">';
+        Object.keys(ex.specificData).forEach(function(key) {
+            var label = fieldLabels[key] || key;
+            html += '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);font-size:0.85em;">';
+            html += '<span style="color:var(--text-medium);font-weight:500;">' + escapeHtml(label) + '</span>';
+            html += '<span style="color:var(--text-dark);font-weight:700;">' + escapeHtml(ex.specificData[key]) + '</span>';
+            html += '</div>';
+        });
+        html += '</div>';
+    } else if (ex.results) {
+        html += '<div style="font-weight:700;color:var(--pink-600);margin-bottom:8px;">Resultados</div>';
         var lines = ex.results.split('\n').filter(function(l) { return l.trim(); });
         html += '<div style="background:var(--pink-50);border-radius:10px;padding:12px;">';
         lines.forEach(function(line) {
             var trimmed = line.trim();
-            // Tentar separar nome: valor
             var colonIdx = trimmed.indexOf(':');
             if (colonIdx > 0 && colonIdx < trimmed.length - 1) {
                 var name = trimmed.substring(0, colonIdx).trim();
@@ -1661,7 +1768,7 @@ function extractExamData(imageBase64) {
         model: 'gemini-2.0-flash',
         contents: [{
             parts: [
-                { text: 'Analise esta imagem de exame médico/laboratorial. Extraia TODAS as informações contidas: nome do exame, data, médico solicitante, laboratório, e TODOS os resultados com valores e unidades. Retorne no formato:\n\nTIPO: (blood/routine/glucose/us/prescription/other)\nTÍTULO: (nome do exame)\nDATA: (YYYY-MM-DD se encontrar)\nMÉDICO: (nome se encontrar)\nLABORATÓRIO: (nome se encontrar)\nRESULTADOS:\n(liste todos os resultados encontrados, um por linha, com valor e referência se disponível)' },
+                { text: 'Analise esta imagem de exame médico/laboratorial de pré-natal. Extraia TODAS as informações. Retorne EXATAMENTE neste formato (deixe vazio se não encontrar):\n\nTIPO: (blood/routine/glucose/us/prescription/other)\nTÍTULO: (nome do exame)\nDATA: (YYYY-MM-DD)\nMÉDICO: (nome)\nLABORATÓRIO: (nome)\nHEMOGLOBINA: (valor numérico ex: 13.6)\nHEMATÓCRITO: (valor ex: 38.8)\nERITRÓCITOS: (valor ex: 4)\nLEUCÓCITOS: (valor ex: 8470)\nPLAQUETAS: (valor ex: 250000)\nVCM: (valor)\nHCM: (valor)\nCHCM: (valor)\nRDW: (valor)\nGLICOSE: (valor ex: 75)\nGRUPO_SANGUINEO: (ex: A+)\nCOOMBS: (ex: Negativo)\nTSH: (valor)\nHIV: (resultado)\nVDRL: (resultado)\nHEPATITE_B: (resultado)\nHEPATITE_C: (resultado)\nTOXO_IGG: (resultado)\nTOXO_IGM: (resultado)\nRUBEOLA_IGG: (resultado)\nCMV_IGG: (resultado)\nGLICOSE_JEJUM: (valor TOTG)\nGLICOSE_1H: (valor TOTG)\nGLICOSE_2H: (valor TOTG)\nBATIMENTOS: (bpm)\nPESO_FETAL: (gramas)\nFEMUR: (mm)\nCCN: (mm)\nDBP: (mm)\nCA: (mm)\nCOLO: (mm)\nILA: (cm)\nPLACENTA: (descrição)\nIG_SEMANAS: (semanas)\nIG_DIAS: (dias)\nPH_URINA: (valor)\nPROTEINA_URINA: (resultado)\nLEUCOCITOS_URINA: (resultado)\nUROCULTURA: (resultado)\nRESULTADOS:\n(outros resultados não listados acima, um por linha)' },
                 { inline_data: { mime_type: mimeType, data: base64Data } }
             ]
         }],
@@ -1706,6 +1813,35 @@ function extractExamData(imageBase64) {
         if (doctorMatch) result.doctor = doctorMatch[1].trim();
         if (labMatch) result.lab = labMatch[1].trim();
         if (resultsMatch) result.results = resultsMatch[1].trim();
+
+        // Mapear campos específicos da resposta da IA para IDs dos inputs
+        var fieldMap = {
+            'HEMOGLOBINA': 'exBloodHb', 'HEMATÓCRITO': 'exBloodHt', 'HEMATOCRITO': 'exBloodHt',
+            'ERITRÓCITOS': 'exBloodEri', 'ERITROCITOS': 'exBloodEri',
+            'LEUCÓCITOS': 'exBloodLeu', 'LEUCOCITOS': 'exBloodLeu',
+            'PLAQUETAS': 'exBloodPlq', 'VCM': 'exBloodVcm', 'HCM': 'exBloodHcm',
+            'CHCM': 'exBloodChcm', 'RDW': 'exBloodRdw', 'GLICOSE': 'exBloodGli',
+            'GRUPO_SANGUINEO': 'exBloodAbo', 'COOMBS': 'exBloodCoombs', 'TSH': 'exBloodTsh',
+            'HIV': 'exBloodHiv', 'VDRL': 'exBloodVdrl',
+            'HEPATITE_B': 'exBloodHepb', 'HEPATITE_C': 'exBloodHepc',
+            'TOXO_IGG': 'exBloodToxoG', 'TOXO_IGM': 'exBloodToxoM',
+            'RUBEOLA_IGG': 'exBloodRubG', 'CMV_IGG': 'exBloodCmvG',
+            'GLICOSE_JEJUM': 'exGluFast', 'GLICOSE_1H': 'exGlu1h', 'GLICOSE_2H': 'exGlu2h',
+            'BATIMENTOS': 'exUsHeart', 'PESO_FETAL': 'exUsWeight',
+            'FEMUR': 'exUsFemur', 'CCN': 'exUsCcn', 'DBP': 'exUsDbp', 'CA': 'exUsCa',
+            'COLO': 'exUsCervix', 'ILA': 'exUsIla', 'PLACENTA': 'exUsPlacenta',
+            'IG_SEMANAS': 'exUsWeeks', 'IG_DIAS': 'exUsDays',
+            'PH_URINA': 'exUrinePh', 'PROTEINA_URINA': 'exUrineProtein',
+            'LEUCOCITOS_URINA': 'exUrineLeu', 'UROCULTURA': 'exUrineCulture'
+        };
+        result.specificFields = {};
+        Object.keys(fieldMap).forEach(function(key) {
+            var regex = new RegExp(key + ':\\s*(.+)', 'i');
+            var match = text.match(regex);
+            if (match && match[1].trim() && match[1].trim() !== '' && match[1].trim().toLowerCase() !== 'n/a') {
+                result.specificFields[fieldMap[key]] = match[1].trim();
+            }
+        });
 
         return result;
     }).catch(function(err) {
@@ -1855,7 +1991,18 @@ var breastfeedingContent = [
             var lastWithLab = prevExams.slice().reverse().find(function(ex) { return ex.lab; });
             if (lastWithLab) lab.value = lastWithLab.lab;
         }
+        toggleExamFields('');
         openModal('examModal');
+    });
+
+    // Mostrar/esconder campos específicos por tipo de exame
+    document.getElementById('examType').addEventListener('change', function() {
+        toggleExamFields(this.value);
+    });
+
+    // Mostrar campo de data agendada quando status não é "done"
+    document.getElementById('examStatus').addEventListener('change', function() {
+        document.getElementById('examScheduledGroup').style.display = this.value !== 'done' ? 'block' : 'none';
     });
 
     // Exam file upload with OCR
@@ -1890,7 +2037,9 @@ var breastfeedingContent = [
 
                     if (result.type) {
                         var typeMap = { blood: 'blood', sangue: 'blood', routine: 'routine', rotina: 'routine', glucose: 'glucose', glicemia: 'glucose', us: 'us', ultrassom: 'us', prescription: 'prescription', receita: 'prescription', other: 'other' };
-                        document.getElementById('examType').value = typeMap[result.type] || 'other';
+                        var mappedType = typeMap[result.type] || 'other';
+                        document.getElementById('examType').value = mappedType;
+                        toggleExamFields(mappedType);
                     }
                     if (result.title) document.getElementById('examTitle').value = result.title;
                     if (result.date) document.getElementById('examDate').value = result.date;
@@ -1900,6 +2049,13 @@ var breastfeedingContent = [
                     // Auto-preencher médico do config se a IA não encontrou
                     if (!result.doctor && appData.config.doctor) {
                         document.getElementById('examDoctor').value = appData.config.doctor;
+                    }
+                    // Preencher campos específicos extraídos pela IA
+                    if (result.specificFields) {
+                        Object.keys(result.specificFields).forEach(function(fieldId) {
+                            var el = document.getElementById(fieldId);
+                            if (el) el.value = result.specificFields[fieldId];
+                        });
                     }
 
                     ocrDiv.innerHTML = '<div style="padding:8px;font-size:0.8em;color:#16a34a;"><i class="fas fa-check-circle"></i> Dados extraídos! Revise e salve.</div>';

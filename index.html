@@ -938,12 +938,16 @@
         </div>
         <form id="examForm">
             <input type="hidden" id="examEditId" value="">
-            <div class="form-group">
-                <label>Anexo (foto ou arquivo do exame)</label>
-                <input type="file" id="examFile" accept="image/*,.pdf" style="font-size:0.85em;">
+
+            <!-- ANEXO NO TOPO -->
+            <div class="form-group" style="background:var(--pink-50);padding:12px;border-radius:12px;border:2px dashed var(--pink-300);">
+                <label style="font-weight:700;color:var(--pink-600);"><i class="fas fa-camera"></i> Anexar exame (foto, imagem ou PDF)</label>
+                <input type="file" id="examFile" accept="image/*,.pdf" style="font-size:0.85em;margin-top:4px;">
+                <div style="font-size:0.7em;color:var(--text-light);margin-top:4px;">A IA preenche todos os campos automaticamente</div>
                 <div id="examFilePreview" style="margin-top:8px;max-height:150px;overflow:hidden;border-radius:10px;"></div>
             </div>
-            <div id="examFormFields">
+
+            <!-- CAMPOS BÁSICOS -->
             <div class="form-group">
                 <label>Tipo *</label>
                 <select id="examType" required>
@@ -961,35 +965,128 @@
                 <label>Título / Descrição *</label>
                 <input type="text" id="examTitle" required placeholder="Ex: Hemograma completo" maxlength="300">
             </div>
-            <div class="form-group">
-                <label>Data *</label>
-                <input type="date" id="examDate" required>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div class="form-group"><label>Data *</label><input type="date" id="examDate" required></div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="examStatus">
+                        <option value="done">Realizado</option>
+                        <option value="scheduled">Agendado</option>
+                        <option value="pending">Pendente</option>
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Médico(a) solicitante</label>
-                <input type="text" id="examDoctor" placeholder="Nome do médico">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div class="form-group"><label>Médico(a)</label><input type="text" id="examDoctor" placeholder="Nome do médico"></div>
+                <div class="form-group"><label>Laboratório</label><input type="text" id="examLab" placeholder="Nome do laboratório"></div>
             </div>
-            <div class="form-group">
-                <label>Laboratório / Local</label>
-                <input type="text" id="examLab" placeholder="Nome do laboratório">
+
+            <!-- CAMPOS ESPECÍFICOS: SANGUE -->
+            <div id="examFieldsBlood" style="display:none;">
+                <div style="font-weight:700;color:var(--pink-600);font-size:0.85em;margin:10px 0 6px;">Hemograma</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">Hemoglobina (g/dL)</label><input type="text" id="exBloodHb" placeholder="13.6"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">Hematócrito (%)</label><input type="text" id="exBloodHt" placeholder="38.8"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">Eritrócitos</label><input type="text" id="exBloodEri" placeholder="4"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">Leucócitos (/mm³)</label><input type="text" id="exBloodLeu" placeholder="8470"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">Plaquetas (/mm³)</label><input type="text" id="exBloodPlq" placeholder="250000"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">VCM (fL)</label><input type="text" id="exBloodVcm" placeholder="92.8"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">HCM (pg)</label><input type="text" id="exBloodHcm" placeholder="32.5"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">CHCM (g/dL)</label><input type="text" id="exBloodChcm" placeholder="35.1"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">RDW (%)</label><input type="text" id="exBloodRdw" placeholder="13.4"></div>
+                </div>
+                <div style="font-weight:700;color:var(--pink-600);font-size:0.85em;margin:10px 0 6px;">Bioquímica</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">Glicose (mg/dL)</label><input type="text" id="exBloodGli" placeholder="75"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">Grupo Sanguíneo</label><input type="text" id="exBloodAbo" placeholder="A+"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">Coombs Indireto</label><input type="text" id="exBloodCoombs" placeholder="Negativo"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">TSH</label><input type="text" id="exBloodTsh" placeholder="2.5"></div>
+                </div>
+                <div style="font-weight:700;color:var(--pink-600);font-size:0.85em;margin:10px 0 6px;">Sorologias</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">HIV</label><input type="text" id="exBloodHiv" placeholder="Não reagente"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">Sífilis (VDRL)</label><input type="text" id="exBloodVdrl" placeholder="Não reagente"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">Hepatite B (HBsAg)</label><input type="text" id="exBloodHepb" placeholder="Não reagente"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">Hepatite C</label><input type="text" id="exBloodHepc" placeholder="Não reagente"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">Toxoplasmose IgG</label><input type="text" id="exBloodToxoG" placeholder="Reagente"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">Toxoplasmose IgM</label><input type="text" id="exBloodToxoM" placeholder="Não reagente"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">Rubéola IgG</label><input type="text" id="exBloodRubG" placeholder="Reagente"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">CMV IgG</label><input type="text" id="exBloodCmvG" placeholder="Reagente"></div>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Resultados / Observações</label>
-                <textarea id="examResults" placeholder="Cole os resultados aqui, ou descreva..." maxlength="5000" style="min-height:100px;"></textarea>
+
+            <!-- CAMPOS ESPECÍFICOS: ULTRASSOM -->
+            <div id="examFieldsUS" style="display:none;">
+                <div style="font-weight:700;color:var(--pink-600);font-size:0.85em;margin:10px 0 6px;">Medidas do Bebê</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">Idade Gestacional (sem)</label><input type="number" id="exUsWeeks" placeholder="18"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">Dias</label><input type="number" id="exUsDays" placeholder="4"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">Batimentos (bpm)</label><input type="text" id="exUsHeart" placeholder="150"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">Peso (g)</label><input type="text" id="exUsWeight" placeholder="273"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">Fêmur (mm)</label><input type="text" id="exUsFemur" placeholder="25.1"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">CCN (mm)</label><input type="text" id="exUsCcn" placeholder="87"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">DBP (mm)</label><input type="text" id="exUsDbp" placeholder="42"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">CA (mm)</label><input type="text" id="exUsCa" placeholder="130"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">Colo Uterino (mm)</label><input type="text" id="exUsCervix" placeholder="40"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">ILA (cm)</label><input type="text" id="exUsIla" placeholder="12"></div>
+                </div>
+                <div class="form-group"><label style="font-size:0.75em;">Placenta</label><input type="text" id="exUsPlacenta" placeholder="Anterior, grau 0"></div>
             </div>
-            <div class="form-group">
-                <label>Status</label>
-                <select id="examStatus">
-                    <option value="done">Realizado</option>
-                    <option value="scheduled">Agendado</option>
-                    <option value="pending">Pendente</option>
-                </select>
+
+            <!-- CAMPOS ESPECÍFICOS: GLICEMIA -->
+            <div id="examFieldsGlucose" style="display:none;">
+                <div style="font-weight:700;color:var(--pink-600);font-size:0.85em;margin:10px 0 6px;">Curva Glicêmica / TOTG 75g</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">Jejum (mg/dL)</label><input type="text" id="exGluFast" placeholder="85"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">1h (mg/dL)</label><input type="text" id="exGlu1h" placeholder="140"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">2h (mg/dL)</label><input type="text" id="exGlu2h" placeholder="120"></div>
+                </div>
             </div>
+
+            <!-- CAMPOS ESPECÍFICOS: URINA -->
+            <div id="examFieldsRoutine" style="display:none;">
+                <div style="font-weight:700;color:var(--pink-600);font-size:0.85em;margin:10px 0 6px;">Exame de Urina</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">pH</label><input type="text" id="exUrinePh" placeholder="6.0"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">Proteínas</label><input type="text" id="exUrineProtein" placeholder="Ausente"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div class="form-group"><label style="font-size:0.75em;">Leucócitos</label><input type="text" id="exUrineLeu" placeholder="< 10.000"></div>
+                    <div class="form-group"><label style="font-size:0.75em;">Urocultura</label><input type="text" id="exUrineCulture" placeholder="Negativa"></div>
+                </div>
+            </div>
+
+            <!-- OBSERVAÇÕES GERAIS -->
             <div class="form-group">
-                <label>Data agendada (se aplicável)</label>
+                <label>Observações adicionais</label>
+                <textarea id="examResults" placeholder="Outras informações ou resultados..." maxlength="5000" style="min-height:60px;"></textarea>
+            </div>
+
+            <div class="form-group" id="examScheduledGroup" style="display:none;">
+                <label>Data agendada</label>
                 <input type="date" id="examScheduledDate">
             </div>
-            </div>
+
             <button type="submit" class="btn btn-primary btn-block">
                 <i class="fas fa-save"></i> Salvar Exame
             </button>
