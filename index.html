@@ -8,7 +8,7 @@
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         caches.keys().then(function(keys) {
             keys.forEach(function(key) {
-                if ((key.indexOf('hadassa-meira-v') !== -1 || key.indexOf('minha-gestacao-v') !== -1) && key !== 'minha-gestacao-v1') {
+                if ((key.indexOf('hadassa-meira-v') !== -1 || key.indexOf('minha-gestacao-v') !== -1) && key !== 'minha-gestacao-v2') {
                     caches.delete(key);
                 }
             });
@@ -44,7 +44,7 @@
 <body>
 
 <!-- Splash Screen -->
-<style>#splashScreen{animation:splashFade 0.5s ease 5s forwards}@keyframes splashFade{to{opacity:0;pointer-events:none}}</style>
+<style>#splashScreen{animation:splashFade 0.5s ease 3s forwards}@keyframes splashFade{to{opacity:0;pointer-events:none}}</style>
 <div id="splashScreen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#f472b6,#ec4899,#a855f7);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s;">
     <div style="font-size:4em;margin-bottom:15px;animation:countdownPulse 2s infinite;">&#x1F476;&#x1F338;</div>
     <div style="font-family:'Dancing Script',cursive;font-size:1.8em;color:white;text-shadow:0 2px 4px rgba(0,0,0,0.2);">A Jornada de</div>
@@ -54,6 +54,138 @@
 
 <!-- Decorative floating elements -->
 <div id="themeDecorContainer"></div>
+
+<!-- TELA DE ACESSO (bloqueio para não-compradores) -->
+<div id="accessGate" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#fdf2f8,#f5f3ff,#fff8f0);z-index:9999;overflow-y:auto;">
+    <div style="max-width:420px;margin:0 auto;padding:40px 20px;text-align:center;min-height:100vh;display:flex;flex-direction:column;justify-content:center;">
+        <div style="font-size:3.5em;margin-bottom:10px;">&#x1F476;&#x1F49C;</div>
+        <h1 style="font-family:'Dancing Script',cursive;font-size:2.2em;color:#ec4899;margin-bottom:8px;">Minha Gestação</h1>
+        <p style="color:#666;font-size:0.95em;margin-bottom:30px;line-height:1.6;">O app mais completo para acompanhar cada semana da sua gravidez.</p>
+
+        <div style="background:white;border-radius:20px;padding:25px;box-shadow:0 4px 20px rgba(236,72,153,0.15);margin-bottom:20px;">
+            <h3 style="color:#be185d;margin-bottom:15px;font-size:1em;"><i class="fas fa-key"></i> Código de Acesso</h3>
+            <p style="font-size:0.8em;color:#888;margin-bottom:15px;">Insira o código que você recebeu após a compra:</p>
+            <input type="text" id="accessCodeInput" placeholder="Ex: GESTACAO-2026" maxlength="30"
+                style="width:100%;padding:14px;border:2px solid #f9a8d4;border-radius:14px;font-family:'Nunito',sans-serif;font-size:1em;text-align:center;text-transform:uppercase;letter-spacing:2px;outline:none;transition:border-color 0.3s;"
+                onfocus="this.style.borderColor='#ec4899'" onblur="this.style.borderColor='#f9a8d4'">
+            <div id="accessError" style="color:#ef4444;font-size:0.8em;margin-top:8px;display:none;"></div>
+            <button id="btnAccessSubmit" onclick="validateAccess()"
+                style="width:100%;margin-top:15px;padding:14px;background:linear-gradient(135deg,#ec4899,#a855f7);color:white;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:1em;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(236,72,153,0.3);transition:all 0.3s;">
+                <i class="fas fa-unlock"></i> Ativar Meu App
+            </button>
+        </div>
+
+        <div style="background:white;border-radius:20px;padding:25px;box-shadow:0 4px 20px rgba(236,72,153,0.1);">
+            <h3 style="color:#be185d;margin-bottom:10px;font-size:1em;">Ainda não tem o app?</h3>
+            <p style="font-size:0.85em;color:#666;margin-bottom:15px;line-height:1.5;">Acompanhe cada semana com ultrassons, gráficos, IA, relatórios PDF e muito mais.</p>
+            <div style="font-size:0.8em;text-decoration:line-through;color:#999;">R$ 49,90</div>
+            <div style="font-size:1.8em;font-weight:900;color:#ec4899;">R$ 29,90</div>
+            <div style="font-size:0.75em;color:#888;margin-bottom:15px;">Pagamento único — acesso vitalício</div>
+            <a href="landing.html"
+                style="display:block;padding:14px;background:#16a34a;color:white;border-radius:14px;font-weight:700;text-decoration:none;font-size:0.95em;box-shadow:0 4px 15px rgba(22,163,74,0.3);">
+                <i class="fab fa-whatsapp"></i> QUERO COMPRAR
+            </a>
+        </div>
+
+        <p style="font-size:0.7em;color:#bbb;margin-top:20px;">
+            <a href="legal.html" style="color:#ccc;">Política de Privacidade</a> |
+            <a href="legal.html" style="color:#ccc;">Termos de Uso</a>
+        </p>
+    </div>
+</div>
+
+<script>
+// Sistema de acesso por código
+// COMO FUNCIONA:
+// 1. Defina códigos válidos no array abaixo
+// 2. O comprador recebe link: seusite.com/index.html?code=CODIGO
+// 3. Ou digita o código manualmente na tela de acesso
+// 4. Código fica salvo no localStorage — só precisa usar 1x
+//
+// CÓDIGOS UNIVERSAIS: funcionam para qualquer pessoa (ideal para Hotmart/Kiwify)
+// CÓDIGOS INDIVIDUAIS: você pode gerar códigos únicos por comprador
+
+var VALID_CODES = [
+    'MINHA-GESTACAO-2026',
+    'MAMAE-VIP-2026',
+    'GESTACAO-PREMIUM',
+    'BEBE-AMADO-2026'
+];
+
+function checkAccess() {
+    // Verificar se já ativou antes
+    if (localStorage.getItem('mg_access_granted') === 'true') return true;
+
+    // Verificar código na URL (?code=XXXX)
+    var params = new URLSearchParams(window.location.search);
+    var urlCode = params.get('code') || params.get('codigo');
+    if (urlCode && isValidCode(urlCode)) {
+        grantAccess(urlCode);
+        // Limpar código da URL (segurança)
+        window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+        return true;
+    }
+
+    return false;
+}
+
+function isValidCode(code) {
+    code = code.trim().toUpperCase();
+    return VALID_CODES.some(function(valid) {
+        return valid.toUpperCase() === code;
+    });
+}
+
+function grantAccess(code) {
+    localStorage.setItem('mg_access_granted', 'true');
+    localStorage.setItem('mg_access_code', code.toUpperCase());
+    localStorage.setItem('mg_access_date', new Date().toISOString());
+}
+
+function validateAccess() {
+    var input = document.getElementById('accessCodeInput');
+    var error = document.getElementById('accessError');
+    var code = input.value.trim();
+
+    if (!code) {
+        error.textContent = 'Digite o código de acesso';
+        error.style.display = 'block';
+        input.style.borderColor = '#ef4444';
+        return;
+    }
+
+    if (isValidCode(code)) {
+        grantAccess(code);
+        document.getElementById('accessGate').style.display = 'none';
+        error.style.display = 'none';
+    } else {
+        error.textContent = 'Código inválido. Verifique e tente novamente.';
+        error.style.display = 'block';
+        input.style.borderColor = '#ef4444';
+        input.classList.add('shake');
+        setTimeout(function() { input.classList.remove('shake'); }, 500);
+    }
+}
+
+// Enter para submeter
+document.addEventListener('DOMContentLoaded', function() {
+    var input = document.getElementById('accessCodeInput');
+    if (input) {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') validateAccess();
+        });
+    }
+});
+
+// Verificar acesso na inicialização
+if (!checkAccess()) {
+    document.getElementById('accessGate').style.display = 'block';
+}
+</script>
+<style>
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+.shake { animation: shake 0.4s ease; }
+</style>
 
 <!-- Header -->
 <header class="header" role="banner">
