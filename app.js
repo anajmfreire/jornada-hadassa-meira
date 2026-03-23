@@ -2790,14 +2790,102 @@ function updateChart(type) {
     // FEAT-005: Peso materno como gráfico (unificado: consultas + tracker)
     if (type === 'momWeight') {
         var momWeights = getAllMomWeights();
-        var mLabels = momWeights.map(function(w) { return formatDate(w.date); });
-        var mData = momWeights.map(function(w) { return parseFloat(w.weight); });
+        var cfg = appData.config;
+        var preWeight = parseFloat(cfg.preWeight) || null;
+        var height = parseFloat(cfg.height) || null;
+        var bmi = (preWeight && height) ? preWeight / ((height/100) * (height/100)) : null;
+        var gainRange = !bmi ? null : bmi < 18.5 ? [12.5, 18] : bmi < 25 ? [11.5, 16] : bmi < 30 ? [7, 11.5] : [5, 9];
+
+        // Incluir peso pré-gestacional como primeiro ponto se disponível
+        var allPoints = [];
+        if (preWeight && cfg.dum) {
+            allPoints.push({ date: cfg.dum, weight: preWeight, label: 'Pre-gravidez', isPreWeight: true });
+        }
+        momWeights.forEach(function(w) {
+            allPoints.push({ date: w.date, weight: parseFloat(w.weight), label: formatDate(w.date), isPreWeight: false });
+        });
+        allPoints.sort(function(a, b) { return a.date.localeCompare(b.date); });
+
+        var mLabels = allPoints.map(function(p) {
+            if (p.isPreWeight) return 'Pre-gravidez';
+            if (cfg.dum) {
+                var wInfo = calcWeeksFromDUM(cfg.dum, p.date);
+                return wInfo ? wInfo.weeks + 's ' + formatDate(p.date) : formatDate(p.date);
+            }
+            return formatDate(p.date);
+        });
+        var mData = allPoints.map(function(p) { return p.weight; });
+
+        // Calcular faixa ideal para cada ponto
+        var datasets = [{
+            label: 'Seu Peso (kg)',
+            data: mData,
+            borderColor: '#ec4899',
+            backgroundColor: 'rgba(236,72,153,0.15)',
+            borderWidth: 3,
+            pointRadius: 6,
+            pointBackgroundColor: allPoints.map(function(p) { return p.isPreWeight ? '#a855f7' : '#ec4899'; }),
+            fill: false,
+            tension: 0.3
+        }];
+
+        if (preWeight && gainRange && cfg.dum) {
+            var idealMin = allPoints.map(function(p) {
+                if (p.isPreWeight) return preWeight;
+                var wInfo = calcWeeksFromDUM(cfg.dum, p.date);
+                return wInfo ? preWeight + (gainRange[0] / 40 * wInfo.weeks) : null;
+            });
+            var idealMax = allPoints.map(function(p) {
+                if (p.isPreWeight) return preWeight;
+                var wInfo = calcWeeksFromDUM(cfg.dum, p.date);
+                return wInfo ? preWeight + (gainRange[1] / 40 * wInfo.weeks) : null;
+            });
+            datasets.push({
+                label: 'Min Ideal',
+                data: idealMin,
+                borderColor: 'rgba(34,197,94,0.5)',
+                borderWidth: 1,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false
+            });
+            datasets.push({
+                label: 'Max Ideal',
+                data: idealMax,
+                borderColor: 'rgba(34,197,94,0.5)',
+                borderWidth: 1,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: '-1',
+                backgroundColor: 'rgba(34,197,94,0.08)'
+            });
+        }
+
         mainChart = new Chart(ctx, {
             type: 'line',
-            data: { labels: mLabels, datasets: [{ label: 'Peso Materno (kg)', data: mData, borderColor: '#a855f7', backgroundColor: 'rgba(168,85,247,0.2)', borderWidth: 3, pointRadius: 6, fill: true, tension: 0.3 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: false } } }
+            data: { labels: mLabels, datasets: datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { font: { family: 'Nunito', size: 11 } } } },
+                scales: { y: { beginAtZero: false, title: { display: true, text: 'kg' } }, x: { ticks: { font: { size: 9 }, maxRotation: 45 } } }
+            }
         });
-        updateChartTable('momWeight', momWeights.map(function(w) { return { date: w.date, momWeight: parseFloat(w.weight), weeks: null, days: null }; }));
+
+        // Tabela comparativa detalhada
+        var tableData = allPoints.map(function(p) {
+            var wInfo = cfg.dum ? calcWeeksFromDUM(cfg.dum, p.date) : null;
+            var gain = preWeight ? (p.weight - preWeight) : null;
+            var idealMinW = (preWeight && gainRange && wInfo) ? preWeight + (gainRange[0] / 40 * wInfo.weeks) : null;
+            var idealMaxW = (preWeight && gainRange && wInfo) ? preWeight + (gainRange[1] / 40 * wInfo.weeks) : null;
+            var status = '';
+            if (gain !== null && idealMinW !== null) {
+                if (p.weight >= idealMinW && p.weight <= idealMaxW) status = 'Adequado';
+                else if (p.weight < idealMinW) status = 'Abaixo';
+                else status = 'Acima';
+            }
+            return { date: p.date, momWeight: p.weight, weeks: wInfo ? wInfo.weeks : null, days: wInfo ? wInfo.days : null, gain: gain, idealMin: idealMinW, idealMax: idealMaxW, status: status, isPreWeight: p.isPreWeight };
+        });
+        updateChartTable('momWeight', tableData);
         return;
     }
 
@@ -2889,13 +2977,41 @@ function updateChart(type) {
 
 function updateChartTable(type, uss) {
     var tbody = document.getElementById('chartTableBody');
+    var thead = document.getElementById('chartTableHead');
     var unitMap = { heartbeat: 'bpm', weight: 'g', femur: 'mm', ccn: 'mm', momWeight: 'kg' };
 
     if (uss.length === 0) {
+        if (thead) thead.innerHTML = '<tr><th>Data</th><th>Sem.</th><th>Valor</th><th>Variacao</th></tr>';
         tbody.innerHTML = '<tr><td colspan="4">Sem dados</td></tr>';
         return;
     }
 
+    // Tabela especial para peso materno
+    if (type === 'momWeight') {
+        if (thead) thead.innerHTML = '<tr><th>Data</th><th>Sem.</th><th>Peso</th><th>Ganho</th><th>Faixa Ideal</th><th>Status</th></tr>';
+        var html = '';
+        uss.forEach(function(us) {
+            var weekStr = us.weeks ? us.weeks + 's' + (us.days ? us.days + 'd' : '') : '--';
+            var gainStr = us.gain !== null ? (us.gain >= 0 ? '+' : '') + us.gain.toFixed(1) + ' kg' : '--';
+            var idealStr = (us.idealMin && us.idealMax) ? us.idealMin.toFixed(1) + ' - ' + us.idealMax.toFixed(1) : '--';
+            var statusBadge = '';
+            if (us.isPreWeight) {
+                statusBadge = '<span style="font-size:0.8em;color:var(--text-light);">Inicio</span>';
+            } else if (us.status === 'Adequado') {
+                statusBadge = '<span class="badge badge-safe" style="font-size:0.75em;">Adequado</span>';
+            } else if (us.status === 'Abaixo') {
+                statusBadge = '<span class="badge badge-warning" style="font-size:0.75em;">Abaixo</span>';
+            } else if (us.status === 'Acima') {
+                statusBadge = '<span class="badge badge-warning" style="font-size:0.75em;">Acima</span>';
+            }
+            html += '<tr><td>' + formatDate(us.date) + '</td><td>' + weekStr + '</td><td><strong>' + us.momWeight.toFixed(1) + '</strong> kg</td><td>' + gainStr + '</td><td>' + idealStr + '</td><td>' + statusBadge + '</td></tr>';
+        });
+        tbody.innerHTML = html;
+        return;
+    }
+
+    // Tabela padrão para outros tipos
+    if (thead) thead.innerHTML = '<tr><th>Data</th><th>Sem.</th><th>Valor</th><th>Variacao</th></tr>';
     var html = '';
     uss.forEach(function(us, i) {
         var val = us[type];
