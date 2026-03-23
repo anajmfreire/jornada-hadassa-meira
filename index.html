@@ -8,7 +8,7 @@
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         caches.keys().then(function(keys) {
             keys.forEach(function(key) {
-                if (key.indexOf('hadassa-meira-v') !== -1 && key !== 'hadassa-meira-v22') {
+                if ((key.indexOf('hadassa-meira-v') !== -1 || key.indexOf('minha-gestacao-v') !== -1) && key !== 'minha-gestacao-v1') {
                     caches.delete(key);
                 }
             });
@@ -18,7 +18,13 @@
         });
     }
     </script>
-    <title>A Jornada de Hadassa Meira</title>
+    <title>Minha Gestação - Diário Completo da Gravidez</title>
+    <meta name="description" content="Acompanhe cada semana da sua gravidez com ultrassons, gráficos, peso, sintomas, exames, IA e relatórios PDF. Tudo em um só app, funciona offline.">
+    <meta name="keywords" content="gravidez, gestação, ultrassom, diário da gravidez, acompanhamento gestacional, peso na gravidez, exames pré-natal, app para grávidas">
+    <meta property="og:title" content="Minha Gestação - Diário Completo da Gravidez">
+    <meta property="og:description" content="Acompanhe cada semana da sua gravidez. Ultrassons, gráficos de evolução, peso, sintomas, exames e IA. Sem assinatura, funciona offline.">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js" integrity="sha384-b8MpgG2ZzWN6OPAtiB1JiBmDr9MpTt3NKK6KQf61hC/L7X4wJrvoTeVmMFPgp3nL" crossorigin="anonymous"></script>
@@ -42,7 +48,7 @@
 <div id="splashScreen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#f472b6,#ec4899,#a855f7);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s;">
     <div style="font-size:4em;margin-bottom:15px;animation:countdownPulse 2s infinite;">&#x1F476;&#x1F338;</div>
     <div style="font-family:'Dancing Script',cursive;font-size:1.8em;color:white;text-shadow:0 2px 4px rgba(0,0,0,0.2);">A Jornada de</div>
-    <div style="font-family:'Dancing Script',cursive;font-size:2.2em;color:white;text-shadow:0 2px 4px rgba(0,0,0,0.2);margin-top:4px;" id="splashName">Hadassa Meira</div>
+    <div style="font-family:'Dancing Script',cursive;font-size:2.2em;color:white;text-shadow:0 2px 4px rgba(0,0,0,0.2);margin-top:4px;" id="splashName">Minha Gestação</div>
     <div style="margin-top:25px;width:50px;height:50px;border:3px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
 </div>
 
@@ -52,8 +58,8 @@
 <!-- Header -->
 <header class="header" role="banner">
     <div class="baby-icon" aria-hidden="true">&#x1F476;&#x1F338;</div>
-    <h1>A Jornada de Hadassa Meira</h1>
-    <div class="subtitle" aria-label="Informações do bebê">Hadassa Meira (Menina) &#x1F49C;</div>
+    <h1 id="appTitle">Minha Gestação</h1>
+    <div class="subtitle" id="appSubtitle" aria-label="Informações do bebê"></div>
 </header>
 <button class="theme-toggle" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar modo escuro">
     <i class="fas fa-moon" id="themeIcon"></i>
@@ -440,7 +446,7 @@
             <div class="card-title"><i class="fas fa-cog"></i> Configurações</div>
             <div class="form-group">
                 <label>Nome do Bebê</label>
-                <input type="text" id="cfgBabyName" value="Hadassa Meira">
+                <input type="text" id="cfgBabyName" value="">
             </div>
             <div class="form-group">
                 <label>Sexo</label>
@@ -512,6 +518,12 @@
             <button class="btn btn-danger btn-block" id="btnClearAll">
                 <i class="fas fa-trash"></i> Limpar Todos os Dados
             </button>
+        </div>
+
+        <!-- Legal -->
+        <div class="card" style="margin-top:20px;text-align:center;">
+            <a href="legal.html" target="_blank" style="font-size:0.8em;color:var(--text-light);text-decoration:underline;">Política de Privacidade e Termos de Uso</a>
+            <p style="font-size:0.7em;color:var(--text-light);margin-top:8px;">Minha Gestação v2.0 — Este app não substitui consultas médicas.</p>
         </div>
     </div>
 
@@ -641,7 +653,7 @@
 <!-- AI Chat Panel -->
 <div class="ai-panel" id="aiPanel">
     <div class="ai-panel-header">
-        <h3><i class="fas fa-robot"></i> Assistente Hadassa IA</h3>
+        <h3><i class="fas fa-robot"></i> Assistente IA da Gestação</h3>
         <button class="ai-close" id="aiCloseBtn"><i class="fas fa-times"></i></button>
     </div>
     <div class="ai-quick-actions">

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Gestação - O App Completo para Acompanhar sua Gravidez</title>
+    <meta name="description" content="Acompanhe cada semana da sua gravidez com ultrassons, gráficos, peso, sintomas, exames e IA. Pague uma vez, use para sempre. Sem assinatura.">
+    <meta property="og:title" content="Minha Gestação - Diário Completo da Gravidez">
+    <meta property="og:description" content="O único app de gravidez que você precisa. Ultrassons, gráficos, peso, IA e relatórios PDF. R$ 29,90 — acesso vitalício.">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Nunito', sans-serif; color: #333; background: #fff; overflow-x: hidden; }
+
+        /* Hero */
+        .hero {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #ec4899 100%);
+            color: white;
+            padding: 60px 20px 80px;
+            text-align: center;
+            position: relative;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-radius: 50% 50% 0 0;
+        }
+        .hero-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .hero h1 {
+            font-family: 'Dancing Script', cursive;
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .hero p {
+            font-size: 1.15em;
+            max-width: 600px;
+            margin: 0 auto 30px;
+            opacity: 0.95;
+            line-height: 1.6;
+        }
+        .hero-price {
+            background: white;
+            color: #ec4899;
+            display: inline-block;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.3em;
+            font-weight: 800;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            margin-bottom: 10px;
+        }
+        .hero-price small {
+            display: block;
+            font-size: 0.55em;
+            color: #666;
+            font-weight: 600;
+        }
+        .hero-price .old-price {
+            text-decoration: line-through;
+            color: #999;
+            font-size: 0.6em;
+            font-weight: 400;
+        }
+
+        /* CTA Button */
+        .cta-btn {
+            display: inline-block;
+            background: #16a34a;
+            color: white;
+            padding: 18px 50px;
+            border-radius: 50px;
+            font-size: 1.2em;
+            font-weight: 800;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(22,163,74,0.4);
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            font-family: 'Nunito', sans-serif;
+        }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(22,163,74,0.5); }
+        .cta-btn i { margin-right: 8px; }
+
+        /* Sections */
+        section { max-width: 900px; margin: 0 auto; padding: 60px 20px; }
+        .section-title {
+            text-align: center;
+            font-size: 2em;
+            color: #be185d;
+            margin-bottom: 40px;
+            font-weight: 800;
+        }
+        .section-title span { color: #a855f7; }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .feature-card {
+            background: linear-gradient(135deg, #fdf2f8, #faf5ff);
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid #f9a8d4;
+            transition: transform 0.3s;
+        }
+        .feature-card:hover { transform: translateY(-4px); }
+        .feature-icon { font-size: 2.5em; margin-bottom: 12px; }
+        .feature-card h3 { color: #be185d; font-size: 1.1em; margin-bottom: 8px; }
+        .feature-card p { font-size: 0.85em; color: #666; line-height: 1.5; }
+
+        /* Comparison */
+        .comparison {
+            background: linear-gradient(135deg, #fdf2f8, #f5f3ff);
+            border-radius: 20px;
+            padding: 40px 20px;
+            margin: 40px 0;
+        }
+        .comparison table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        .comparison th {
+            background: #ec4899;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        .comparison th:last-child {
+            background: #16a34a;
+        }
+        .comparison td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0d0e8;
+        }
+        .comparison tr:nth-child(even) td { background: rgba(255,255,255,0.5); }
+        .check { color: #16a34a; font-weight: 800; }
+        .cross { color: #ccc; }
+
+        /* Testimonials */
+        .testimonials {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .testimonial {
+            background: white;
+            border: 2px solid #f9a8d4;
+            border-radius: 20px;
+            padding: 25px;
+        }
+        .testimonial-stars { color: #f59e0b; margin-bottom: 10px; }
+        .testimonial p { font-size: 0.9em; color: #555; line-height: 1.6; font-style: italic; margin-bottom: 12px; }
+        .testimonial-author { font-weight: 700; color: #be185d; font-size: 0.85em; }
+
+        /* Guarantee */
+        .guarantee {
+            background: linear-gradient(135deg, #dcfce7, #d1fae5);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin: 40px 0;
+            border: 2px solid #86efac;
+        }
+        .guarantee h3 { color: #166534; font-size: 1.5em; margin-bottom: 15px; }
+        .guarantee p { color: #15803d; font-size: 1em; line-height: 1.6; max-width: 600px; margin: 0 auto; }
+
+        /* FAQ */
+        .faq-item {
+            border-bottom: 1px solid #f0d0e8;
+            padding: 20px 0;
+        }
+        .faq-item h4 {
+            color: #be185d;
+            font-size: 1em;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .faq-item p { font-size: 0.9em; color: #666; line-height: 1.6; }
+
+        /* Final CTA */
+        .final-cta {
+            background: linear-gradient(135deg, #ec4899, #a855f7);
+            color: white;
+            text-align: center;
+            padding: 60px 20px;
+            border-radius: 30px;
+            margin: 40px 0;
+        }
+        .final-cta h2 { font-size: 2em; margin-bottom: 15px; }
+        .final-cta p { font-size: 1.1em; opacity: 0.9; margin-bottom: 30px; max-width: 500px; margin-left: auto; margin-right: auto; margin-bottom: 30px; }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            background: #fdf2f8;
+            font-size: 0.8em;
+            color: #999;
+        }
+        footer a { color: #ec4899; text-decoration: none; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .hero h1 { font-size: 2.2em; }
+            .hero p { font-size: 1em; }
+            .section-title { font-size: 1.5em; }
+            .features-grid { grid-template-columns: 1fr; }
+            .comparison { overflow-x: auto; }
+        }
+
+        /* Animations */
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .float { animation: float 3s ease-in-out infinite; }
+    </style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+    <div class="hero-badge"><i class="fas fa-star"></i> Mais de 25 funcionalidades em um só app</div>
+    <h1>Minha Gestação</h1>
+    <p>O app mais completo para acompanhar cada semana da sua gravidez. Ultrassons, gráficos, peso, sintomas, IA e relatórios PDF. <strong>Tudo em um só lugar.</strong></p>
+
+    <div class="hero-price">
+        <span class="old-price">R$ 49,90</span><br>
+        R$ 29,90
+        <small>Pagamento único — acesso vitalício</small>
+    </div>
+    <br><br>
+    <a href="#comprar" class="cta-btn"><i class="fab fa-whatsapp"></i> QUERO MEU APP AGORA</a>
+    <br><br>
+    <small style="opacity:0.7;">Acesso imediato após o pagamento. Sem assinatura mensal.</small>
+</div>
+
+<!-- FUNCIONALIDADES -->
+<section>
+    <h2 class="section-title">Tudo que você precisa na <span>palma da mão</span></h2>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">📅</div>
+            <h3>Semana a Semana</h3>
+            <p>Acompanhe o desenvolvimento do seu bebê da semana 4 à 42. Saiba o tamanho, peso e o que está se formando.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Gráficos de Evolução</h3>
+            <p>Visualize batimentos, peso do bebê, fêmur e CCN com gráficos profissionais e referências médicas.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">⚖️</div>
+            <h3>Controle de Peso</h3>
+            <p>Registre seu peso semanalmente. Veja se está na faixa ideal com gráfico, alertas e faixa por IMC.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h3>IA Assistente</h3>
+            <p>Tire dúvidas sobre sua gestação com inteligência artificial. Respostas personalizadas para você.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📋</div>
+            <h3>Exames e Consultas</h3>
+            <p>Registre todos os exames (sangue, US, rotina) com resultados detalhados. Nunca esqueça uma consulta.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📄</div>
+            <h3>Relatórios PDF</h3>
+            <p>Gere relatórios profissionais para levar ao médico. Ultrassons, evolução, consultas e peso materno.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🍼</div>
+            <h3>Timer de Amamentação</h3>
+            <p>Quando o bebê nascer, registre cada mamada com timer, lado e duração. Histórico diário completo.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📝</div>
+            <h3>Diário da Gravidez</h3>
+            <p>Sintomas, anotações, receitas médicas e uma carta para o bebê. Tudo registrado com carinho.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🧸</div>
+            <h3>Listas Completas</h3>
+            <p>Enxoval, mala da mamãe, mala do bebê — com quantidades e tamanhos. Checklist prático para não esquecer nada.</p>
+        </div>
+    </div>
+
+    <div style="text-align:center;">
+        <p style="color:#666;margin-bottom:20px;">E mais: plano de parto, pressão arterial, licença maternidade, conquistas, modo offline, sincronização na nuvem...</p>
+        <a href="#comprar" class="cta-btn" style="background:#ec4899;"><i class="fas fa-heart"></i> QUERO COMEÇAR AGORA</a>
+    </div>
+</section>
+
+<!-- COMPARAÇÃO -->
+<section>
+    <h2 class="section-title">Por que escolher o <span>Minha Gestação</span>?</h2>
+
+    <div class="comparison">
+        <table>
+            <thead>
+                <tr>
+                    <th>Funcionalidade</th>
+                    <th>Apps Grátis</th>
+                    <th>Flo (R$ 49/mês)</th>
+                    <th style="background:#16a34a;">Minha Gestação</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Conteúdo semanal</td>
+                    <td><span class="check">✓</span> Básico</td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span> Completo</td>
+                </tr>
+                <tr>
+                    <td>Registro de ultrassons</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span> Com análise</td>
+                </tr>
+                <tr>
+                    <td>Gráficos de evolução do bebê</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span> 6 tipos</td>
+                </tr>
+                <tr>
+                    <td>Controle de peso com faixa ideal</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Relatório PDF para o médico</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Assistente IA</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Funciona offline</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Sem propagandas</td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Preço</strong></td>
+                    <td>Grátis (com ads)</td>
+                    <td><strong>R$ 49,90/mês</strong></td>
+                    <td><strong style="color:#16a34a;">R$ 29,90 ÚNICO</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- DEPOIMENTOS -->
+<section>
+    <h2 class="section-title">O que as <span>mamães</span> dizem</h2>
+    <div class="testimonials">
+        <div class="testimonial">
+            <div class="testimonial-stars">★★★★★</div>
+            <p>"Melhor investimento da minha gravidez! Uso todo dia para acompanhar o crescimento da minha bebê. Os gráficos são incríveis!"</p>
+            <div class="testimonial-author">— Camila S., 28 semanas</div>
+        </div>
+        <div class="testimonial">
+            <div class="testimonial-stars">★★★★★</div>
+            <p>"Meu médico adorou o relatório PDF que levei. Ele disse que nunca viu uma paciente tão organizada! O app é completo demais."</p>
+            <div class="testimonial-author">— Fernanda M., 34 semanas</div>
+        </div>
+        <div class="testimonial">
+            <div class="testimonial-stars">★★★★★</div>
+            <p>"Eu pagava R$ 49/mês no Flo e não tinha metade do que esse app oferece. Agora paguei uma vez só e tenho tudo!"</p>
+            <div class="testimonial-author">— Juliana R., 20 semanas</div>
+        </div>
+    </div>
+</section>
+
+<!-- GARANTIA -->
+<section>
+    <div class="guarantee">
+        <h3><i class="fas fa-shield-alt"></i> Garantia de 7 dias</h3>
+        <p>Se você não amar o app nos primeiros 7 dias, devolvemos 100% do seu dinheiro. Sem perguntas, sem burocracia. O risco é todo nosso.</p>
+    </div>
+</section>
+
+<!-- FAQ -->
+<section>
+    <h2 class="section-title">Perguntas <span>Frequentes</span></h2>
+
+    <div class="faq-item">
+        <h4><i class="fas fa-chevron-right"></i> Como funciona o acesso?</h4>
+        <p>Após o pagamento, você recebe imediatamente o link de acesso por e-mail e WhatsApp. O app funciona direto no navegador do celular — não precisa baixar nada. Você pode até instalar como app na tela inicial!</p>
+    </div>
+    <div class="faq-item">
+        <h4><i class="fas fa-chevron-right"></i> Funciona no iPhone e Android?</h4>
+        <p>Sim! O app funciona em qualquer celular com navegador moderno (Chrome, Safari, Firefox). Funciona também no computador e tablet.</p>
+    </div>
+    <div class="faq-item">
+        <h4><i class="fas fa-chevron-right"></i> Preciso de internet para usar?</h4>
+        <p>Não! Depois de acessar pela primeira vez, o app funciona 100% offline. Seus dados ficam salvos no celular e sincronizam quando tiver internet.</p>
+    </div>
+    <div class="faq-item">
+        <h4><i class="fas fa-chevron-right"></i> Meus dados ficam seguros?</h4>
+        <p>Sim! Seus dados ficam no seu celular e opcionalmente na nuvem (com login Google). Ninguém mais tem acesso. Você pode exportar ou apagar a qualquer momento.</p>
+    </div>
+    <div class="faq-item">
+        <h4><i class="fas fa-chevron-right"></i> O app substitui o médico?</h4>
+        <p>Não! O app é uma ferramenta de acompanhamento pessoal. Sempre siga as orientações do seu médico ou obstetra. O app ajuda você a se organizar e levar informações precisas para as consultas.</p>
+    </div>
+    <div class="faq-item">
+        <h4><i class="fas fa-chevron-right"></i> Posso usar em mais de um celular?</h4>
+        <p>Sim! Fazendo login com sua conta Google, seus dados sincronizam automaticamente entre celular, tablet e computador.</p>
+    </div>
+</section>
+
+<!-- CTA FINAL -->
+<section>
+    <div class="final-cta" id="comprar">
+        <h2>Comece sua jornada agora</h2>
+        <p>Acompanhe cada momento da sua gravidez com carinho e organização. Seu bebê merece.</p>
+        <div style="margin-bottom:20px;">
+            <span style="font-size:0.9em;text-decoration:line-through;opacity:0.6;">R$ 49,90</span>
+            <span style="font-size:2.5em;font-weight:900;display:block;">R$ 29,90</span>
+            <span style="font-size:0.85em;opacity:0.8;">Pagamento único — acesso vitalício</span>
+        </div>
+        <a href="#" class="cta-btn" style="font-size:1.3em;padding:20px 60px;"><i class="fab fa-whatsapp"></i> COMPRAR AGORA</a>
+        <br><br>
+        <small style="opacity:0.7;"><i class="fas fa-lock"></i> Pagamento seguro — Garantia de 7 dias</small>
+    </div>
+</section>
+
+<footer>
+    <p>Minha Gestação © 2026 — Todos os direitos reservados</p>
+    <p style="margin-top:8px;">
+        <a href="legal.html">Política de Privacidade</a> |
+        <a href="legal.html">Termos de Uso</a>
+    </p>
+    <p style="margin-top:8px;">Este app não substitui consultas médicas profissionais.</p>
+</footer>
+
+</body>
+</html>

@@ -41,7 +41,7 @@ function getDefaultData() {
     return {
         version: DATA_VERSION,
         config: {
-            babyName: 'Hadassa Meira',
+            babyName: '',
             babySex: 'Menina',
             dum: '',
             dpp: '',
@@ -378,7 +378,16 @@ function showSection(sectionName) {
         tools: 'Ferramentas', faq: 'Perguntas Frequentes', glossary: 'Glossário',
         notes: 'Anotações', config: 'Configurações'
     };
-    document.title = (sectionNames[sectionName] || 'Início') + ' | A Jornada de ' + (appData.config.babyName || 'Hadassa Meira');
+    var babyName = appData.config.babyName;
+    document.title = (sectionNames[sectionName] || 'Início') + ' | ' + (babyName ? 'A Jornada de ' + babyName : 'Minha Gestação');
+    // Atualizar título e subtítulo do header
+    var titleEl = document.getElementById('appTitle');
+    var subtitleEl = document.getElementById('appSubtitle');
+    if (titleEl) titleEl.textContent = babyName ? 'A Jornada de ' + babyName : 'Minha Gestação';
+    if (subtitleEl && babyName) {
+        var sexLabel = appData.config.babySex || '';
+        subtitleEl.textContent = babyName + (sexLabel ? ' (' + sexLabel + ')' : '');
+    }
 }
 
 function handleHashChange() {
@@ -515,9 +524,10 @@ function updateWeekBanner() {
         document.getElementById('dueDate').textContent = '--/--/----';
     }
 
-    document.querySelector('.header h1').textContent = 'A Jornada de ' + cfg.babyName;
-    document.querySelector('.header .subtitle').textContent =
-        cfg.babyName + ' (' + cfg.babySex + ') \u{1F49C}';
+    var headerH1 = document.getElementById('appTitle');
+    var headerSub = document.getElementById('appSubtitle');
+    if (headerH1) headerH1.textContent = cfg.babyName ? 'A Jornada de ' + cfg.babyName : 'Minha Gestação';
+    if (headerSub) headerSub.textContent = cfg.babyName ? cfg.babyName + ' (' + (cfg.babySex || '') + ') \u{1F49C}' : '';
 }
 
 // ============ FORMAT HELPERS ============
@@ -1310,7 +1320,7 @@ function shareCard() {
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('A Jornada de ' + cfg.babyName, 300, 38);
+        ctx.fillText(cfg.babyName ? 'A Jornada de ' + cfg.babyName : 'Minha Gestacao', 300, 38);
 
         // Week info
         if (info) {
@@ -1350,14 +1360,14 @@ function shareCard() {
         ctx.fillRect(0, 360, 600, 40);
         ctx.fillStyle = '#fff';
         ctx.font = '12px "Segoe UI", Arial, sans-serif';
-        ctx.fillText('A Jornada de ' + cfg.babyName, 300, 385);
+        ctx.fillText(cfg.babyName ? 'A Jornada de ' + cfg.babyName : 'Minha Gestacao', 300, 385);
 
         canvas.toBlob(function(blob) {
             if (!blob) { showToast('Erro ao gerar imagem'); return; }
             if (navigator.share) {
                 var file = new File([blob], 'jornada_' + cfg.babyName.replace(/\s/g, '_') + '.png', { type: 'image/png' });
                 navigator.share({
-                    title: 'A Jornada de ' + cfg.babyName,
+                    title: cfg.babyName ? 'A Jornada de ' + cfg.babyName : 'Minha Gestação',
                     text: cfg.babyName + ' - ' + (info ? info.weeks + ' semanas' : '') + ' de gestacao!',
                     files: [file]
                 }).catch(function() {
@@ -1507,7 +1517,7 @@ function printSummary() {
     html += '.info{margin:15px 0;}.label{font-weight:bold;color:#666;}.value{color:#333;}';
     html += 'table{width:100%;border-collapse:collapse;margin:15px 0;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}';
     html += 'th{background:#fdf2f8;color:#be185d;}.footer{text-align:center;color:#999;font-size:0.8em;margin-top:30px;}</style></head><body>';
-    html += '<h1>\u{1F476} A Jornada de ' + escapeHtml(cfg.babyName) + '</h1>';
+    html += '<h1>\u{1F476} ' + (cfg.babyName ? 'A Jornada de ' + escapeHtml(cfg.babyName) : 'Minha Gestação') + '</h1>';
     html += '<div class="info"><span class="label">Mãe:</span> <span class="value">' + escapeHtml(cfg.momName) + '</span></div>';
     html += '<div class="info"><span class="label">Bebê:</span> <span class="value">' + escapeHtml(cfg.babyName) + ' (' + escapeHtml(cfg.babySex) + ')</span></div>';
     if (cfg.doctor) html += '<div class="info"><span class="label">Médico(a):</span> <span class="value">' + escapeHtml(cfg.doctor) + '</span></div>';
@@ -1550,7 +1560,7 @@ function printSummary() {
         html += '</ul>';
     }
 
-    html += '<div class="footer">Gerado em ' + formatDate(toLocalDateStr(new Date())) + ' | A Jornada de ' + escapeHtml(cfg.babyName) + '</div>';
+    html += '<div class="footer">Gerado em ' + formatDate(toLocalDateStr(new Date())) + ' | ' + (cfg.babyName ? 'A Jornada de ' + escapeHtml(cfg.babyName) : 'Minha Gestação') + '</div>';
     html += '</body></html>';
 
     printWindow.document.write(html);
@@ -3111,7 +3121,7 @@ function generatePDF(type) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text('A Jornada de ' + cfg.babyName, 105, 15, { align: 'center' });
+    doc.text(cfg.babyName ? 'A Jornada de ' + cfg.babyName : 'Minha Gestação', 105, 15, { align: 'center' });
     doc.setFontSize(10);
     doc.text(cfg.babyName + ' (' + cfg.babySex + ') | Mae: ' + cfg.momName, 105, 23, { align: 'center' });
     doc.text('Gerado em: ' + formatDate(toLocalDateStr(new Date())), 105, 30, { align: 'center' });
@@ -3558,51 +3568,9 @@ function renderAfterChange(changedEntity) {
 
 // ============ LOAD SAMPLE DATA ============
 function loadSampleData() {
+    // App comercial: sem dados de exemplo, onboarding guia a configuração
     if (localStorage.getItem('hadassa_sample_loaded') === 'true') return;
-    if (appData.ultrasounds.length > 0 || getAllUSData().length > 0) return;
-
-    appData.config.dum = '2025-11-19';
-    appData.config.babyName = 'Hadassa Meira';
-    appData.config.babySex = 'Menina';
-    appData.config.momName = 'Jessica';
-
-    appData.ultrasounds = [
-        {
-            id: genId(), date: '2026-01-03', title: 'Primeiro Registro',
-            weeks: 6, days: 6, heartbeat: 120, weight: null,
-            femur: null, ccn: 8.6, dbp: null, ca: null,
-            cervix: null, placenta: '', ila: '',
-            obs: 'Primeiro registro do bebe! Idade Gestacional: 6 semanas e 6 dias',
-            photo: null
-        },
-        {
-            id: genId(), date: '2026-02-04', title: 'Primeiros Batidos',
-            weeks: 11, days: 3, heartbeat: 150, weight: null,
-            femur: null, ccn: 46.2, dbp: null, ca: null,
-            cervix: null, placenta: '', ila: '',
-            obs: 'Primeiros batimentos fortes detectados!',
-            photo: null
-        },
-        {
-            id: genId(), date: '2026-02-27', title: 'Crescimento e Segurança',
-            weeks: 14, days: 5, heartbeat: 152, weight: null,
-            femur: 15.1, ccn: 87.0, dbp: null, ca: null,
-            cervix: null, placenta: '', ila: '',
-            obs: 'Crescimento adequado. Fêmur medido pela primeira vez.',
-            photo: null
-        },
-        {
-            id: genId(), date: '2026-03-20', title: 'O Dia da Descoberta',
-            weeks: 18, days: 1, heartbeat: 150, weight: 273,
-            femur: 25.1, ccn: null, dbp: null, ca: null,
-            cervix: 40.0, placenta: '', ila: '',
-            obs: 'O segredo revelado: É HADASSA MEIRA! Colo uterino com 40mm - Baixo Risco.',
-            photo: null
-        }
-    ];
-
     localStorage.setItem('hadassa_sample_loaded', 'true');
-    saveData(appData);
 }
 
 // ============ AI ASSISTANT ============
@@ -3734,7 +3702,7 @@ function getPregnancyContext() {
 }
 
 function getSystemPrompt() {
-    return 'Você é a assistente IA de gravidez da ' + (appData.config.momName || 'mamãe') + ', integrada ao app "A Jornada de ' + appData.config.babyName + '".\n\n' +
+    return 'Você é a assistente IA de gravidez da ' + (appData.config.momName || 'mamãe') + ', integrada ao app "Minha Gestação".\n\n' +
         'REGRAS IMPORTANTES:\n' +
         '- Responda SEMPRE em português brasileiro, de forma acolhedora, carinhosa e profissional\n' +
         '- Use emojis com moderação para deixar as respostas mais fofas\n' +
@@ -3906,8 +3874,8 @@ function sendAIMessage() {
     var splash = document.getElementById('splashScreen');
     if (splash) {
         var splashName = document.getElementById('splashName');
-        if (splashName && appData.config.babyName) {
-            splashName.textContent = appData.config.babyName;
+        if (splashName) {
+            splashName.textContent = appData.config.babyName ? 'A Jornada de ' + appData.config.babyName : 'Minha Gestação';
         }
         setTimeout(function() {
             splash.style.opacity = '0';

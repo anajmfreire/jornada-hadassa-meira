@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidade e Termos de Uso — Minha Gestação</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#ec4899">
+    <style>
+        :root {
+            --pink-50: #fdf2f8;
+            --pink-100: #fce7f3;
+            --pink-200: #fbcfe8;
+            --pink-300: #f9a8d4;
+            --pink-400: #f472b6;
+            --pink-500: #ec4899;
+            --pink-600: #db2777;
+            --pink-700: #be185d;
+            --pink-800: #9d174d;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            color: var(--gray-700);
+            background: var(--gray-50);
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--pink-500), var(--pink-600));
+            color: white;
+            padding: 2.5rem 1.5rem 2rem;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 12px rgba(236, 72, 153, 0.3);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 0.25rem;
+        }
+
+        header p {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+            background: rgba(255,255,255,0.18);
+            padding: 0.4rem 0.9rem;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        nav.toc {
+            background: white;
+            max-width: 820px;
+            margin: 1.5rem auto;
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+
+        nav.toc h2 {
+            font-size: 1rem;
+            color: var(--pink-600);
+            margin-bottom: 0.75rem;
+        }
+
+        nav.toc ol {
+            padding-left: 1.2rem;
+        }
+
+        nav.toc li {
+            margin-bottom: 0.35rem;
+        }
+
+        nav.toc a {
+            color: var(--gray-700);
+            text-decoration: none;
+            font-size: 0.92rem;
+            transition: color 0.2s;
+        }
+
+        nav.toc a:hover {
+            color: var(--pink-500);
+        }
+
+        main {
+            max-width: 820px;
+            margin: 0 auto 3rem;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+
+        .card--alert {
+            border-left: 5px solid #ef4444;
+            background: #fef2f2;
+        }
+
+        .card--alert h2 {
+            color: #dc2626;
+        }
+
+        .card--alert p, .card--alert li {
+            color: #7f1d1d;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--pink-700);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--pink-100);
+        }
+
+        h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin: 1.25rem 0 0.5rem;
+        }
+
+        p {
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        ul, ol {
+            margin: 0.5rem 0 1rem 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        li {
+            margin-bottom: 0.35rem;
+        }
+
+        strong {
+            color: var(--gray-800);
+        }
+
+        .date {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--pink-100);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 1rem;
+            font-size: 0.82rem;
+            color: var(--gray-600);
+        }
+
+        footer a {
+            color: var(--pink-500);
+            text-decoration: none;
+        }
+
+        @media (max-width: 600px) {
+            header { padding: 2rem 1rem 1.5rem; }
+            header h1 { font-size: 1.2rem; }
+            .back-btn { position: relative; left: 0; top: 0; transform: none; margin-bottom: 0.75rem; display: inline-flex; }
+            .card { padding: 1.25rem; }
+            h2 { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="index.html" class="back-btn">&#8592; Voltar ao App</a>
+    <h1>Termos Legais — Minha Gestacao</h1>
+    <p>Politica de Privacidade, Termos de Uso e Aviso Medico</p>
+</header>
+
+<nav class="toc">
+    <h2>Indice</h2>
+    <ol>
+        <li><a href="#aviso-medico">Aviso Medico Importante</a></li>
+        <li><a href="#privacidade">Politica de Privacidade (LGPD)</a></li>
+        <li><a href="#termos">Termos de Uso</a></li>
+        <li><a href="#cookies">Politica de Armazenamento Local e Cookies</a></li>
+        <li><a href="#exclusao">Direito a Exclusao de Dados</a></li>
+    </ol>
+</nav>
+
+<main>
+
+    <!-- ============================================================ -->
+    <!-- AVISO MÉDICO -->
+    <!-- ============================================================ -->
+    <section id="aviso-medico" class="card card--alert">
+        <h2>1. Aviso Medico Importante</h2>
+        <p><strong>LEIA COM ATENCAO ANTES DE USAR O APLICATIVO.</strong></p>
+        <p>O aplicativo "Minha Gestacao" <strong>NAO e um dispositivo medico</strong>, <strong>NAO realiza diagnosticos</strong> e <strong>NAO substitui, em hipotese alguma, a consulta, o acompanhamento ou o aconselhamento de profissionais de saude qualificados</strong> (medicos, enfermeiros, nutricionistas ou outros).</p>
+        <ul>
+            <li>As informacoes fornecidas pelo aplicativo, incluindo contagens de semanas, estimativas de desenvolvimento fetal, dicas e conteudos gerados por inteligencia artificial (chatbot), possuem carater <strong>meramente informativo e educativo</strong>.</li>
+            <li>As respostas do chatbot com inteligencia artificial (Google Gemini) <strong>NAO constituem opiniao medica</strong>. Elas podem conter imprecisoes ou informacoes desatualizadas.</li>
+            <li><strong>Em caso de emergencia, dor, sangramento, reducao de movimentos fetais ou qualquer sintoma preocupante, procure imediatamente um servico de saude.</strong></li>
+            <li>Nunca altere, suspenda ou inicie qualquer tratamento ou medicacao com base em informacoes obtidas neste aplicativo.</li>
+            <li>O desenvolvedor nao se responsabiliza por quaisquer danos decorrentes do uso das informacoes apresentadas pelo aplicativo.</li>
+        </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- POLÍTICA DE PRIVACIDADE -->
+    <!-- ============================================================ -->
+    <section id="privacidade" class="card">
+        <h2>2. Politica de Privacidade</h2>
+        <p><em>Em conformidade com a Lei Geral de Protecao de Dados Pessoais (Lei n. 13.709/2018 — LGPD).</em></p>
+
+        <h3>2.1. Controlador de Dados</h3>
+        <p>O aplicativo "Minha Gestacao" e desenvolvido e mantido por um desenvolvedor independente. Para duvidas, solicitacoes ou exercicio dos seus direitos, entre em contato pelo e-mail disponibilizado na pagina do aplicativo.</p>
+
+        <h3>2.2. Dados Pessoais Coletados</h3>
+        <p>Coletamos e tratamos os seguintes dados pessoais, fornecidos voluntariamente por voce:</p>
+        <ul>
+            <li><strong>Dados de identificacao:</strong> nome, e-mail e foto de perfil (obtidos via Google OAuth no momento do login).</li>
+            <li><strong>Dados de saude (dados sensiveis):</strong> registros de ultrassonografia, peso, pressao arterial, sintomas, compromissos medicos, data da ultima menstruacao (DUM) e informacoes relacionadas a gestacao.</li>
+            <li><strong>Dados de uso:</strong> preferencias do aplicativo, configuracoes de tema e dados de progresso.</li>
+            <li><strong>Chave de API do Google Gemini:</strong> caso voce opte por utilizar o recurso de chatbot com IA, a chave de API e fornecida e armazenada por voce. Nao temos acesso a essa chave.</li>
+        </ul>
+
+        <h3>2.3. Bases Legais para o Tratamento (Art. 7, LGPD)</h3>
+        <ul>
+            <li><strong>Consentimento (Art. 7, I e Art. 11, I):</strong> Ao criar uma conta e utilizar o aplicativo, voce consente com o tratamento dos seus dados pessoais, incluindo dados sensiveis de saude, para as finalidades descritas nesta politica.</li>
+            <li><strong>Execucao de contrato (Art. 7, V):</strong> O tratamento e necessario para a prestacao do servico contratado.</li>
+        </ul>
+
+        <h3>2.4. Finalidades do Tratamento</h3>
+        <ul>
+            <li>Fornecer as funcionalidades do aplicativo (acompanhamento gestacional, registros de saude, lembretes).</li>
+            <li>Sincronizar seus dados entre dispositivos por meio do Google Firebase.</li>
+            <li>Autenticar sua identidade via Google OAuth.</li>
+            <li>Gerar respostas do chatbot com IA (quando ativado por voce, usando sua propria chave de API).</li>
+        </ul>
+
+        <h3>2.5. Armazenamento dos Dados</h3>
+        <ul>
+            <li><strong>Localmente:</strong> Seus dados sao armazenados no seu dispositivo utilizando localStorage e IndexedDB do navegador.</li>
+            <li><strong>Na nuvem:</strong> Quando voce faz login, seus dados sao sincronizados com o Google Firebase Realtime Database, hospedado nos servidores do Google. Os dados sao associados ao seu identificador unico de usuario (UID).</li>
+            <li><strong>Chatbot IA:</strong> As mensagens enviadas ao chatbot sao transmitidas diretamente ao Google Gemini por meio da sua chave de API pessoal. Nao armazenamos o conteudo dessas conversas em nossos servidores.</li>
+        </ul>
+
+        <h3>2.6. Compartilhamento de Dados</h3>
+        <p><strong>Nao vendemos, alugamos ou compartilhamos seus dados pessoais com terceiros para fins comerciais.</strong> Seus dados podem ser processados pelos seguintes provedores de infraestrutura, na qualidade de operadores:</p>
+        <ul>
+            <li><strong>Google Firebase:</strong> autenticacao e armazenamento na nuvem (sujeito a <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener">Politica de Privacidade do Google</a>).</li>
+            <li><strong>Google Gemini API:</strong> processamento de mensagens do chatbot, somente quando ativado por voce.</li>
+        </ul>
+
+        <h3>2.7. Seus Direitos (Art. 18, LGPD)</h3>
+        <p>Voce possui os seguintes direitos em relacao aos seus dados pessoais:</p>
+        <ul>
+            <li>Confirmacao da existencia de tratamento.</li>
+            <li>Acesso aos dados.</li>
+            <li>Correcao de dados incompletos, inexatos ou desatualizados.</li>
+            <li>Anonimizacao, bloqueio ou eliminacao de dados desnecessarios ou excessivos.</li>
+            <li>Portabilidade dos dados (exportacao).</li>
+            <li>Eliminacao dos dados pessoais tratados com base no consentimento.</li>
+            <li>Revogacao do consentimento a qualquer momento.</li>
+            <li>Informacao sobre com quem seus dados sao compartilhados.</li>
+        </ul>
+        <p>Para exercer qualquer desses direitos, consulte a secao <a href="#exclusao">"Direito a Exclusao de Dados"</a> abaixo ou entre em contato conosco.</p>
+
+        <h3>2.8. Seguranca</h3>
+        <p>Adotamos medidas tecnicas razoaveis para proteger seus dados, incluindo:</p>
+        <ul>
+            <li>Autenticacao segura via Google OAuth 2.0.</li>
+            <li>Comunicacao criptografada (HTTPS) entre o aplicativo e o Firebase.</li>
+            <li>Regras de seguranca no Firebase que restringem o acesso aos dados apenas ao usuario autenticado correspondente.</li>
+        </ul>
+        <p>Nenhum sistema e 100% seguro. Nao podemos garantir protecao absoluta contra acessos nao autorizados.</p>
+
+        <h3>2.9. Transferencia Internacional de Dados</h3>
+        <p>Seus dados podem ser armazenados e processados em servidores do Google localizados fora do Brasil. O Google adota clausulas contratuais padrao e certificacoes de conformidade com legislacoes de protecao de dados, conforme descrito em sua politica de privacidade.</p>
+
+        <h3>2.10. Retencao de Dados</h3>
+        <p>Seus dados serao retidos enquanto voce mantiver sua conta ativa. Apos a exclusao da conta ou solicitacao de eliminacao, os dados serao removidos em ate 30 dias dos nossos sistemas.</p>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- TERMOS DE USO -->
+    <!-- ============================================================ -->
+    <section id="termos" class="card">
+        <h2>3. Termos de Uso</h2>
+
+        <h3>3.1. Aceitacao</h3>
+        <p>Ao acessar e utilizar o aplicativo "Minha Gestacao", voce declara que leu, compreendeu e concorda com estes Termos de Uso, com a Politica de Privacidade e com o Aviso Medico. Caso nao concorde, nao utilize o aplicativo.</p>
+
+        <h3>3.2. Descricao do Servico</h3>
+        <p>"Minha Gestacao" e um aplicativo web progressivo (PWA) gratuito que auxilia gestantes no acompanhamento da gravidez, oferecendo funcionalidades como:</p>
+        <ul>
+            <li>Contagem de semanas e estimativa de data provavel do parto.</li>
+            <li>Registro de exames, consultas, peso e pressao arterial.</li>
+            <li>Listas de enxoval e mala da maternidade.</li>
+            <li>Chatbot com inteligencia artificial (recurso opcional).</li>
+            <li>Sincronizacao de dados entre dispositivos via Google Firebase.</li>
+        </ul>
+
+        <h3>3.3. Uso Adequado</h3>
+        <p>Voce concorda em:</p>
+        <ul>
+            <li>Utilizar o aplicativo apenas para fins pessoais e nao comerciais.</li>
+            <li>Fornecer informacoes verdadeiras e precisas.</li>
+            <li>Nao tentar acessar dados de outros usuarios.</li>
+            <li>Nao utilizar o aplicativo de forma que possa danifica-lo, sobrecarrega-lo ou comprometer sua seguranca.</li>
+            <li>Nao utilizar as informacoes do aplicativo como substituto de orientacao medica profissional.</li>
+        </ul>
+
+        <h3>3.4. Chatbot com Inteligencia Artificial</h3>
+        <ul>
+            <li>O recurso de chatbot e <strong>opcional</strong> e requer que voce forneca sua propria chave de API do Google Gemini.</li>
+            <li>Voce e responsavel pelo uso e pela seguranca da sua chave de API.</li>
+            <li>As respostas geradas pela IA sao automaticas e podem conter erros, imprecisoes ou informacoes inadequadas.</li>
+            <li>O desenvolvedor nao se responsabiliza pelo conteudo gerado pela IA nem por quaisquer consequencias do seu uso.</li>
+            <li>O uso do Google Gemini esta sujeito aos <a href="https://ai.google.dev/terms" target="_blank" rel="noopener">Termos de Servico do Google</a>.</li>
+        </ul>
+
+        <h3>3.5. Conta e Autenticacao</h3>
+        <p>O login e feito exclusivamente por meio do Google OAuth. Voce e responsavel pela seguranca da sua conta Google. O aplicativo nao armazena senhas.</p>
+
+        <h3>3.6. Disponibilidade</h3>
+        <p>O aplicativo e fornecido "como esta" (<em>as is</em>), sem garantias de disponibilidade ininterrupta. O desenvolvedor pode modificar, suspender ou descontinuar o servico a qualquer momento, sem aviso previo.</p>
+
+        <h3>3.7. Propriedade Intelectual</h3>
+        <p>Todo o conteudo do aplicativo (codigo, design, textos, icones) e de propriedade do desenvolvedor ou licenciado por terceiros. E proibida a reproducao, distribuicao ou modificacao sem autorizacao previa.</p>
+
+        <h3>3.8. Limitacao de Responsabilidade</h3>
+        <p>Na extensao maxima permitida pela legislacao brasileira, o desenvolvedor <strong>nao sera responsavel</strong> por:</p>
+        <ul>
+            <li>Danos diretos, indiretos, incidentais ou consequenciais decorrentes do uso ou da incapacidade de uso do aplicativo.</li>
+            <li>Perda de dados armazenados localmente ou na nuvem.</li>
+            <li>Decisoes tomadas com base em informacoes do aplicativo ou do chatbot com IA.</li>
+            <li>Interrupcoes, erros ou falhas no servico.</li>
+        </ul>
+
+        <h3>3.9. Alteracoes nos Termos</h3>
+        <p>Estes Termos podem ser atualizados periodicamente. A data da ultima atualizacao sera indicada no final desta pagina. O uso continuado do aplicativo apos alteracoes constitui aceitacao dos novos termos.</p>
+
+        <h3>3.10. Legislacao Aplicavel e Foro</h3>
+        <p>Estes Termos sao regidos pelas leis da Republica Federativa do Brasil. Fica eleito o foro da comarca do domicilio do usuario para dirimir quaisquer controversias.</p>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- COOKIES / ARMAZENAMENTO LOCAL -->
+    <!-- ============================================================ -->
+    <section id="cookies" class="card">
+        <h2>4. Politica de Armazenamento Local e Cookies</h2>
+
+        <h3>4.1. Tecnologias Utilizadas</h3>
+        <p>O aplicativo utiliza as seguintes tecnologias de armazenamento no seu navegador:</p>
+        <ul>
+            <li><strong>localStorage:</strong> Armazena suas configuracoes, preferencias e dados da gestacao para funcionamento offline e carregamento rapido.</li>
+            <li><strong>IndexedDB:</strong> Armazena dados maiores ou mais estruturados relacionados ao acompanhamento gestacional.</li>
+            <li><strong>Service Worker e Cache API:</strong> Permitem que o aplicativo funcione offline, armazenando recursos estaticos (HTML, CSS, JavaScript, imagens) no cache do navegador.</li>
+            <li><strong>Cookies de autenticacao:</strong> O Google Firebase Authentication pode utilizar cookies ou tokens para manter sua sessao ativa.</li>
+        </ul>
+
+        <h3>4.2. Finalidades</h3>
+        <ul>
+            <li><strong>Essencial:</strong> Manter o funcionamento do aplicativo, suas preferencias e sessao de login.</li>
+            <li><strong>Funcional:</strong> Permitir acesso offline e sincronizacao de dados.</li>
+        </ul>
+        <p>O aplicativo <strong>nao utiliza cookies de rastreamento, analytics ou publicidade</strong>.</p>
+
+        <h3>4.3. Gerenciamento</h3>
+        <p>Voce pode limpar os dados armazenados localmente a qualquer momento atraves das configuracoes do seu navegador. Esteja ciente de que isso pode resultar na perda de dados nao sincronizados com a nuvem.</p>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- EXCLUSÃO DE DADOS -->
+    <!-- ============================================================ -->
+    <section id="exclusao" class="card">
+        <h2>5. Direito a Exclusao de Dados</h2>
+
+        <h3>5.1. Como Excluir Seus Dados</h3>
+        <p>Voce pode solicitar a exclusao dos seus dados das seguintes formas:</p>
+
+        <p><strong>Dados locais (no seu dispositivo):</strong></p>
+        <ul>
+            <li>Acesse as configuracoes do seu navegador e limpe os dados de site (localStorage, IndexedDB, cache) referentes ao dominio do aplicativo.</li>
+            <li>Desinstale o PWA, se instalado.</li>
+        </ul>
+
+        <p><strong>Dados na nuvem (Firebase):</strong></p>
+        <ul>
+            <li>Utilize a funcao de exclusao de conta disponivel dentro do aplicativo (se disponivel).</li>
+            <li>Envie uma solicitacao de exclusao por e-mail para o contato do desenvolvedor, informando o endereco de e-mail associado a sua conta Google.</li>
+        </ul>
+
+        <h3>5.2. Prazo</h3>
+        <p>Apos receber sua solicitacao, os dados serao eliminados dos nossos sistemas em ate <strong>30 (trinta) dias</strong>. Dados em backups automaticos do Firebase podem levar ate 180 dias para serem completamente removidos.</p>
+
+        <h3>5.3. Consequencias</h3>
+        <p>A exclusao dos dados e <strong>irreversivel</strong>. Todos os registros de exames, consultas, configuracoes e demais informacoes serao permanentemente apagados.</p>
+    </section>
+
+    <p class="date">Ultima atualizacao: 23 de marco de 2026</p>
+
+</main>
+
+<footer>
+    <p>&copy; 2026 Minha Gestacao — Desenvolvido de forma independente.</p>
+    <p><a href="index.html">Voltar ao aplicativo</a></p>
+</footer>
+
+</body>
+</html>
