@@ -1088,19 +1088,19 @@ function _getUSExamCount() {
     try { var e = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); return e.filter(function(x){return x.type==='us'&&x.status==='done'}).length; } catch(e) { return 0; }
 }
 function _hasHeartbeat() {
-    if ((appData.ultrasounds || []).some(function(u){return u.heartbeat;})) return true;
+    if (getAllUSData().some(function(u){return u.heartbeat;})) return true;
     try { var e = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]');
         return e.some(function(x){ return x.type==='us' && x.specificData && x.specificData.exUsHeart; });
     } catch(e) { return false; }
 }
 
 var achievementDefs = [
-    { id: 'first_us', icon: '\u{1F4F8}', title: 'Primeiro Registro', desc: 'Registrou o primeiro exame', check: function() { return (appData.ultrasounds || []).length >= 1 || _getExamCount() >= 1; } },
+    { id: 'first_us', icon: '\u{1F4F8}', title: 'Primeiro Registro', desc: 'Registrou o primeiro exame', check: function() { return getAllUSData().length >= 1 || _getExamCount() >= 1; } },
     { id: 'heartbeat', icon: '\u{1F49C}', title: 'Coração Batendo', desc: 'Registrou batimentos cardíacos', check: function() { return _hasHeartbeat(); } },
     { id: 'halfway', icon: '\u{1F389}', title: 'Metade do Caminho', desc: 'Atingiu 20 semanas', check: function() { var i = calcCurrentGestationalAge(); return i ? i.weeks >= 20 : false; } },
     { id: 'five_apps', icon: '\u{1F4C5}', title: 'Mãe Organizada', desc: '5 consultas ou exames', check: function() { return (appData.appointments || []).length + _getExamCount() >= 5; } },
     { id: 'ten_notes', icon: '\u{1F4D6}', title: 'Diário Completo', desc: '10 anotações feitas', check: function() { return (appData.notes || []).length >= 10; } },
-    { id: 'three_us', icon: '\u{1F4CA}', title: 'Acompanhamento', desc: '3 ultrassons registrados', check: function() { return (appData.ultrasounds || []).length + _getUSExamCount() >= 3; } },
+    { id: 'three_us', icon: '\u{1F4CA}', title: 'Acompanhamento', desc: '3 ultrassons registrados', check: function() { return getAllUSData().length >= 3; } },
     { id: 'weight_track', icon: '\u{2696}\u{FE0F}', title: 'Controlando o Peso', desc: 'Registrou peso em uma consulta', check: function() { return (appData.appointments || []).some(function(a) { return a.momWeight; }); } },
     { id: 'third_tri', icon: '\u{1F31F}', title: 'Reta Final', desc: 'Entrou no 3º trimestre', check: function() { var i = calcCurrentGestationalAge(); return i ? i.weeks >= 28 : false; } }
 ];
@@ -1275,82 +1275,101 @@ function renderSymptomTracker() {
 
 // ============ FEAT-007: SHARE CARD ============
 function shareCard() {
-    var cfg = appData.config;
-    var uss = appData.ultrasounds;
-    if (uss.length === 0) { showToast('Registre um ultrassom primeiro!'); return; }
+    try {
+        var cfg = appData.config;
+        var info = calcCurrentGestationalAge();
 
-    var last = uss[uss.length - 1];
-    var info = calcCurrentGestationalAge();
-    var fruit = info ? getFruitForWeek(info.weeks) : null;
+        // Buscar dados de todas as fontes
+        var uss = getAllUSData();
+        var last = uss.length > 0 ? uss[uss.length - 1] : null;
 
-    var canvas = document.createElement('canvas');
-    canvas.width = 600;
-    canvas.height = 400;
-    var ctx = canvas.getContext('2d');
-
-    // Background gradient
-    var gradient = ctx.createLinearGradient(0, 0, 600, 400);
-    gradient.addColorStop(0, '#fdf2f8');
-    gradient.addColorStop(0.5, '#faf5ff');
-    gradient.addColorStop(1, '#fff8f0');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 600, 400);
-
-    // Header bar
-    ctx.fillStyle = '#ec4899';
-    ctx.fillRect(0, 0, 600, 60);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 22px Nunito, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('A Jornada de ' + cfg.babyName, 300, 38);
-
-    // Week info
-    if (info) {
-        ctx.fillStyle = '#be185d';
-        ctx.font = 'bold 42px Nunito, sans-serif';
-        ctx.fillText(info.weeks + ' semanas', 300, 110);
-        ctx.fillStyle = '#9a7090';
-        ctx.font = '16px Nunito, sans-serif';
-        ctx.fillText(info.weeks + ' semanas e ' + info.days + ' dias de gestação', 300, 135);
-    }
-
-    // Data
-    ctx.fillStyle = '#4a2040';
-    ctx.font = '16px Nunito, sans-serif';
-    var yPos = 170;
-    if (last.heartbeat) { ctx.fillText('\u{1F49C} Batimentos: ' + last.heartbeat + ' bpm', 300, yPos); yPos += 28; }
-    if (last.weight) { ctx.fillText('\u{2696}\u{FE0F} Peso: ' + last.weight + ' g', 300, yPos); yPos += 28; }
-    if (last.femur) { ctx.fillText('\u{1F9B4} Fêmur: ' + last.femur + ' mm', 300, yPos); yPos += 28; }
-
-    // Fruit
-    if (fruit) {
-        yPos += 10;
-        ctx.font = '14px Nunito, sans-serif';
-        ctx.fillStyle = '#9a7090';
-        ctx.fillText('Tamanho do bebê: ' + fruit.fruit + ' ' + fruit.emoji + ' (' + fruit.size + ')', 300, yPos);
-    }
-
-    // Footer
-    ctx.fillStyle = '#ec4899';
-    ctx.fillRect(0, 360, 600, 40);
-    ctx.fillStyle = '#fff';
-    ctx.font = '12px Nunito, sans-serif';
-    ctx.fillText('Criado com A Jornada de ' + cfg.babyName + ' \u{1F49C}', 300, 385);
-
-    canvas.toBlob(function(blob) {
-        if (navigator.share) {
-            var file = new File([blob], 'jornada_' + cfg.babyName.replace(/\s/g, '_') + '.png', { type: 'image/png' });
-            navigator.share({
-                title: 'A Jornada de ' + cfg.babyName,
-                text: cfg.babyName + ' - ' + (info ? info.weeks + ' semanas' : '') + ' de gestação!',
-                files: [file]
-            }).catch(function() {
-                downloadBlob(blob, cfg.babyName);
-            });
-        } else {
-            downloadBlob(blob, cfg.babyName);
+        // Permitir compartilhar mesmo sem US se tiver info gestacional
+        if (!info && !last) {
+            showToast('Configure a DUM ou registre um exame primeiro!');
+            return;
         }
-    }, 'image/png');
+
+        var fruit = info ? getFruitForWeek(info.weeks) : null;
+
+        var canvas = document.createElement('canvas');
+        canvas.width = 600;
+        canvas.height = 400;
+        var ctx = canvas.getContext('2d');
+
+        // Background gradient
+        var gradient = ctx.createLinearGradient(0, 0, 600, 400);
+        gradient.addColorStop(0, '#fdf2f8');
+        gradient.addColorStop(0.5, '#faf5ff');
+        gradient.addColorStop(1, '#fff8f0');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 600, 400);
+
+        // Header bar
+        ctx.fillStyle = '#ec4899';
+        ctx.fillRect(0, 0, 600, 60);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('A Jornada de ' + cfg.babyName, 300, 38);
+
+        // Week info
+        if (info) {
+            ctx.fillStyle = '#be185d';
+            ctx.font = 'bold 42px "Segoe UI", Arial, sans-serif';
+            ctx.fillText(info.weeks + ' semanas', 300, 110);
+            ctx.fillStyle = '#9a7090';
+            ctx.font = '16px "Segoe UI", Arial, sans-serif';
+            ctx.fillText(info.weeks + ' semanas e ' + info.days + ' dias de gestacao', 300, 135);
+        }
+
+        // Data do bebê
+        ctx.fillStyle = '#4a2040';
+        ctx.font = '16px "Segoe UI", Arial, sans-serif';
+        var yPos = 170;
+        if (last && last.heartbeat) { ctx.fillText('Batimentos: ' + last.heartbeat + ' bpm', 300, yPos); yPos += 28; }
+        if (last && last.weight) { ctx.fillText('Peso estimado: ' + last.weight + ' g', 300, yPos); yPos += 28; }
+        if (last && last.femur) { ctx.fillText('Femur: ' + last.femur + ' mm', 300, yPos); yPos += 28; }
+        if (last && last.ccn) { ctx.fillText('CCN: ' + last.ccn + ' mm', 300, yPos); yPos += 28; }
+
+        // Se não tem dados numéricos mas tem US, mostrar info básica
+        if (last && !last.heartbeat && !last.weight && !last.femur && !last.ccn) {
+            ctx.fillText('Ultimo exame: ' + formatDate(last.date), 300, yPos);
+            yPos += 28;
+        }
+
+        // Fruit
+        if (fruit) {
+            yPos = Math.max(yPos, 280);
+            ctx.font = '14px "Segoe UI", Arial, sans-serif';
+            ctx.fillStyle = '#9a7090';
+            ctx.fillText('Tamanho do bebe: ' + fruit.fruit + ' (' + fruit.size + ')', 300, yPos);
+        }
+
+        // Footer
+        ctx.fillStyle = '#ec4899';
+        ctx.fillRect(0, 360, 600, 40);
+        ctx.fillStyle = '#fff';
+        ctx.font = '12px "Segoe UI", Arial, sans-serif';
+        ctx.fillText('A Jornada de ' + cfg.babyName, 300, 385);
+
+        canvas.toBlob(function(blob) {
+            if (!blob) { showToast('Erro ao gerar imagem'); return; }
+            if (navigator.share) {
+                var file = new File([blob], 'jornada_' + cfg.babyName.replace(/\s/g, '_') + '.png', { type: 'image/png' });
+                navigator.share({
+                    title: 'A Jornada de ' + cfg.babyName,
+                    text: cfg.babyName + ' - ' + (info ? info.weeks + ' semanas' : '') + ' de gestacao!',
+                    files: [file]
+                }).catch(function() {
+                    downloadBlob(blob, cfg.babyName);
+                });
+            } else {
+                downloadBlob(blob, cfg.babyName);
+            }
+        }, 'image/png');
+    } catch (err) {
+        showToast('Erro ao compartilhar: ' + (err.message || 'tente novamente'));
+    }
 }
 
 function downloadBlob(blob, name) {
@@ -1366,7 +1385,7 @@ function downloadBlob(blob, name) {
 // ============ FEAT-001: ONBOARDING WIZARD ============
 function showOnboarding() {
     if (localStorage.getItem('hadassa_onboarding_done')) return;
-    if (appData.ultrasounds.length > 0) { localStorage.setItem('hadassa_onboarding_done', 'true'); return; }
+    if (getAllUSData().length > 0 || (typeof getExams === 'function' && getExams().length > 0)) { localStorage.setItem('hadassa_onboarding_done', 'true'); return; }
 
     var step = 1;
     renderOnboardingStep(step);
@@ -1476,7 +1495,7 @@ function initSwipeNavigation() {
 // ============ UX-015: PRINT SUMMARY ============
 function printSummary() {
     var cfg = appData.config;
-    var uss = appData.ultrasounds;
+    var uss = getAllUSData();
     var info = calcCurrentGestationalAge();
     var last = uss.length > 0 ? uss[uss.length - 1] : null;
     var fruit = info ? getFruitForWeek(info.weeks) : null;
@@ -1592,7 +1611,7 @@ function scheduleAppointmentReminders() {
 // ============ FEAT-010: PHOTO GALLERY ============
 function openGallery() {
     var container = document.getElementById('galleryContent');
-    var photosUS = appData.ultrasounds.filter(function(u) { return u.photo; });
+    var photosUS = getAllUSData().filter(function(u) { return u.photo; });
 
     if (photosUS.length === 0) {
         container.innerHTML = '<div class="empty-state" style="width:100%;"><i class="fas fa-images"></i><p>Nenhuma foto registrada</p></div>';
@@ -1649,7 +1668,7 @@ function showFullPhoto(dataUrl) {
 function renderRadarChart() {
     if (mainChart) mainChart.destroy();
     var ctx = document.getElementById('mainChart').getContext('2d');
-    var uss = appData.ultrasounds;
+    var uss = getAllUSData();
     var last = uss.length > 0 ? uss[uss.length - 1] : null;
 
     if (!last || !last.weeks) {
@@ -1733,7 +1752,7 @@ function renderRadarChart() {
 // ============ FEAT-012: EXPORT CSV + CLINICAL PDF ============
 function exportCSV() {
     var csv = 'Data,Semanas,Dias,Titulo,Batimentos,Peso,Femur,CCN,DBP,CA,Colo,Placenta,ILA,Observacoes\n';
-    appData.ultrasounds.forEach(function(us) {
+    getAllUSData().forEach(function(us) {
         csv += [us.date, us.weeks||'', us.days||'', '"'+(us.title||'')+'"', us.heartbeat||'', us.weight||'', us.femur||'', us.ccn||'', us.dbp||'', us.ca||'', us.cervix||'', us.placenta||'', us.ila||'', '"'+(us.obs||'')+'"'].join(',') + '\n';
     });
 
@@ -1921,9 +1940,32 @@ function renderKickCounter() {
 }
 
 // ============ FEAT-005: MATERNAL WEIGHT TRACKING ============
+function getAllMomWeights() {
+    var allWeights = [];
+    // From appointments
+    if (appData.appointments) {
+        appData.appointments.forEach(function(a) {
+            if (a.momWeight) {
+                allWeights.push({ date: a.date, weight: parseFloat(a.momWeight) });
+            }
+        });
+    }
+    // From weight tracker
+    try {
+        var trackerWeights = JSON.parse(localStorage.getItem('hadassa_mom_weights') || '[]');
+        trackerWeights.forEach(function(w) {
+            var exists = allWeights.some(function(e) { return e.date === w.date; });
+            if (!exists) allWeights.push({ date: w.date, weight: parseFloat(w.weight) });
+        });
+    } catch(e) {}
+    allWeights.sort(function(a, b) { return a.date.localeCompare(b.date); });
+    return allWeights;
+}
+
 function renderMomWeightChart() {
-    var appointments = appData.appointments.filter(function(a) { return a.momWeight; });
-    if (appointments.length === 0) return '';
+    var allWeights = getAllMomWeights();
+    if (allWeights.length === 0) return '';
+    var appointments = allWeights; // compatibility
 
     var cfg = appData.config;
     var preWeight = parseFloat(cfg.preWeight) || null;
@@ -1954,7 +1996,7 @@ function renderMomWeightChart() {
 
     appointments.sort(function(a, b) { return a.date.localeCompare(b.date); });
     appointments.forEach(function(a) {
-        var weight = parseFloat(a.momWeight);
+        var weight = parseFloat(a.weight || a.momWeight);
         html += '<tr><td>' + formatDate(a.date) + '</td><td>' + weight.toFixed(1) + '</td>';
         if (preWeight) {
             var gain = (weight - preWeight).toFixed(1);
@@ -1997,6 +2039,141 @@ function closeModal(id, force) {
     if (form) form.reset();
     var editField = document.querySelector('#' + id + ' input[type="hidden"]');
     if (editField) editField.value = '';
+}
+
+// ============ UNIFIED US DATA (ultrasounds + exams) ============
+/**
+ * Retorna todos os dados de ultrassom combinados: appData.ultrasounds + exames tipo US.
+ * Dados dos exames (hadassa_exams) com specificData são convertidos para o mesmo formato.
+ * Elimina duplicatas por data+semana. Ordenado por data.
+ */
+function getAllUSData() {
+    var combined = [];
+
+    // 1) Dados dos ultrasounds tradicionais
+    (appData.ultrasounds || []).forEach(function(us) {
+        combined.push({
+            id: us.id,
+            date: us.date,
+            title: us.title || '',
+            weeks: us.weeks,
+            days: us.days || 0,
+            heartbeat: us.heartbeat || null,
+            weight: us.weight || null,
+            femur: us.femur || null,
+            ccn: us.ccn || null,
+            dbp: us.dbp || null,
+            ca: us.ca || null,
+            cervix: us.cervix || null,
+            placenta: us.placenta || '',
+            ila: us.ila || '',
+            obs: us.obs || '',
+            photo: us.photo || null,
+            source: 'ultrasound'
+        });
+    });
+
+    // 2) Dados dos exames tipo US com specificData
+    var exams = [];
+    try { exams = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); } catch(e) {}
+
+    // Helper para parseFloat seguro (nunca retorna NaN)
+    function safePF(val) {
+        if (val === null || val === undefined || val === '') return null;
+        var n = parseFloat(val);
+        return isNaN(n) ? null : n;
+    }
+    function safePI(val) {
+        if (val === null || val === undefined || val === '') return null;
+        var n = parseInt(val, 10);
+        return isNaN(n) ? null : n;
+    }
+
+    // Helper: verificar se exame tem dados de US (nos campos específicos ou no tipo)
+    function isUSExam(ex) {
+        if (ex.type === 'us') return true;
+        // Verificar se tem dados de US nos campos específicos mesmo com tipo diferente
+        var d = ex.specificData || {};
+        if (d.exUsHeart || d.exUsWeight || d.exUsFemur || d.exUsCcn || d.exUsWeeks) return true;
+        // Verificar título/resultados por keywords de ultrassom
+        var text = ((ex.title || '') + ' ' + (ex.results || '')).toLowerCase();
+        if (/ultrassom|ultrassonografia|morfol[oó]gic|transvaginal|obstetric|us\s|ecografia/i.test(text)) return true;
+        return false;
+    }
+
+    exams.filter(isUSExam).forEach(function(ex) {
+        var d = ex.specificData || {};
+        // Verificar se já existe um ultrasound com mesma data (evitar duplicata)
+        var isDuplicate = combined.some(function(c) { return c.date === ex.date; });
+        if (isDuplicate) {
+            // Merge: preencher campos vazios do existente com dados do exame
+            var existing = combined.find(function(c) { return c.date === ex.date; });
+            if (existing) {
+                if (!existing.heartbeat && d.exUsHeart) existing.heartbeat = safePF(d.exUsHeart);
+                if (!existing.weight && d.exUsWeight) existing.weight = safePF(d.exUsWeight);
+                if (!existing.femur && d.exUsFemur) existing.femur = safePF(d.exUsFemur);
+                if (!existing.ccn && d.exUsCcn) existing.ccn = safePF(d.exUsCcn);
+                if (!existing.weeks && d.exUsWeeks) existing.weeks = safePI(d.exUsWeeks);
+                if (!existing.title && ex.title) existing.title = ex.title;
+                if (!existing.obs && ex.results) existing.obs = ex.results;
+            }
+            return;
+        }
+
+        var heartbeat = safePF(d.exUsHeart);
+        var weight = safePF(d.exUsWeight);
+        var femur = safePF(d.exUsFemur);
+        var ccn = safePF(d.exUsCcn);
+        var weeks = safePI(d.exUsWeeks);
+        var days = safePI(d.exUsDays) || 0;
+
+        // Fallback: extrair dos resultados texto
+        if (!heartbeat && ex.results) {
+            var hbMatch = ex.results.match(/(?:batimento|bcf|fc\s*fetal)[:\s]*(\d{2,3})\s*(?:bpm)?/i);
+            if (hbMatch) { var hbVal = parseInt(hbMatch[1], 10); if (hbVal >= 60 && hbVal <= 220) heartbeat = hbVal; }
+        }
+        if (!weight && ex.results) {
+            var wMatch = ex.results.match(/peso\s*(?:fetal|estimado)?[:\s]*(\d+)/i);
+            if (wMatch) weight = safePF(wMatch[1]);
+        }
+        if (!femur && ex.results) {
+            var fMatch = ex.results.match(/f[eê]mur[:\s]*([\d.]+)/i);
+            if (fMatch) femur = safePF(fMatch[1]);
+        }
+
+        // Calcular semanas a partir da DUM se não informado
+        if (!weeks && appData.config.dum && ex.date) {
+            var calcInfo = calcWeeksFromDUM(appData.config.dum, ex.date);
+            if (calcInfo) { weeks = calcInfo.weeks; days = calcInfo.days; }
+        }
+
+        // Adicionar se tiver data válida (mesmo sem medidas numéricas)
+        if (ex.date) {
+            combined.push({
+                id: ex.id,
+                date: ex.date,
+                title: ex.title || 'Ultrassom',
+                weeks: weeks,
+                days: days,
+                heartbeat: heartbeat,
+                weight: weight,
+                femur: femur,
+                ccn: ccn,
+                dbp: safePF(d.exUsDbp),
+                ca: safePF(d.exUsCa),
+                cervix: safePF(d.exUsCervix),
+                placenta: d.exUsPlacenta || '',
+                ila: d.exUsIla || '',
+                obs: ex.results || '',
+                photo: ex.fileId || null,
+                source: 'exam'
+            });
+        }
+    });
+
+    // Ordenar por data
+    combined.sort(function(a, b) { return a.date.localeCompare(b.date); });
+    return combined;
 }
 
 // ============ ULTRASOUNDS ============
@@ -2055,6 +2232,11 @@ function saveUltrasound(e) {
 
 function editUltrasound(id) {
     var us = appData.ultrasounds.find(function(u) { return u.id === id; });
+    // Também buscar nos dados unificados (exames tipo US)
+    if (!us) {
+        var allUS = getAllUSData();
+        us = allUS.find(function(u) { return u.id === id; });
+    }
     if (!us) return;
     document.getElementById('usEditId').value = us.id;
     document.getElementById('usDate').value = us.date;
@@ -2071,6 +2253,17 @@ function editUltrasound(id) {
     document.getElementById('usPlacenta').value = us.placenta || '';
     document.getElementById('usILA').value = us.ila || '';
     document.getElementById('usObs').value = us.obs || '';
+    // Expandir seção de medidas se existem dados
+    var hasMedidas = us.heartbeat || us.weight || us.femur || us.ccn || us.dbp || us.ca || us.cervix || us.weeks;
+    var medidasSection = document.getElementById('usMedidasSection');
+    var medidasIcon = document.getElementById('usMedidasIcon');
+    if (hasMedidas) {
+        medidasSection.style.display = 'block';
+        medidasIcon.className = 'fas fa-chevron-up';
+    } else {
+        medidasSection.style.display = 'none';
+        medidasIcon.className = 'fas fa-chevron-down';
+    }
     var preview = document.getElementById('usPhotoPreview');
     if (us.photo) {
         preview.dataset.photoId = us.photo;
@@ -2090,12 +2283,23 @@ function editUltrasound(id) {
 function deleteUltrasound(id) {
     showCustomConfirm('Excluir Ultrassom', 'Deseja realmente excluir este registro?', '\u{1F5D1}').then(function(confirmed) {
         if (!confirmed) return;
+        // Tentar excluir de appData.ultrasounds
         var us = appData.ultrasounds.find(function(u) { return u.id === id; });
-        if (us && us.photo) {
-            deletePhoto(us.photo).catch(function() {});
+        if (us) {
+            if (us.photo) deletePhoto(us.photo).catch(function() {});
+            appData.ultrasounds = appData.ultrasounds.filter(function(u) { return u.id !== id; });
+            saveData(appData);
+        } else {
+            // Pode ser um exame tipo US — excluir dos exames
+            try {
+                var exams = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]');
+                var filtered = exams.filter(function(ex) { return ex.id !== id; });
+                if (filtered.length < exams.length) {
+                    if (typeof saveExams === 'function') saveExams(filtered);
+                    else localStorage.setItem('hadassa_exams', JSON.stringify(filtered));
+                }
+            } catch(e) {}
         }
-        appData.ultrasounds = appData.ultrasounds.filter(function(u) { return u.id !== id; });
-        saveData(appData);
         renderAfterChange('ultrasound');
         showToast('Ultrassom excluído!');
     });
@@ -2146,14 +2350,15 @@ function renderTimelineExamItem(ex) {
 
 function renderUltrasounds() {
     var container = document.getElementById('usList');
-    if (appData.ultrasounds.length === 0) {
+    var allUS = getAllUSData();
+    if (allUS.length === 0) {
         container.innerHTML = '<div class="empty-state"><i class="fas fa-baby"></i><p>Nenhum ultrassom registrado ainda</p></div>';
         return;
     }
 
     var searchInput = document.getElementById('usSearchInput');
     var query = searchInput ? searchInput.value.toLowerCase().trim() : '';
-    var filtered = appData.ultrasounds;
+    var filtered = allUS;
     if (query) {
         filtered = filtered.filter(function(us) {
             var weekStr = (us.weeks || '') + 's' + (us.days || '') + 'd';
@@ -2189,6 +2394,10 @@ function renderUltrasounds() {
 
 function showUSDetail(id) {
     var us = appData.ultrasounds.find(function(u) { return u.id === id; });
+    if (!us) {
+        var allUS = getAllUSData();
+        us = allUS.find(function(u) { return u.id === id; });
+    }
     if (!us) return;
     document.getElementById('detailTitle').innerHTML = '<i class="fas fa-baby"></i> ' + escapeHtml(us.title);
     var html = '<div style="margin-bottom:10px">' +
@@ -2216,9 +2425,10 @@ function showUSDetail(id) {
         html += '<div id="detailPhotoContainer" style="margin-top:12px;"><strong>Foto:</strong><br><small>Carregando...</small></div>';
     }
 
-    var idx = appData.ultrasounds.findIndex(function(u) { return u.id === id; });
+    var allUSDetail = getAllUSData();
+    var idx = allUSDetail.findIndex(function(u) { return u.id === id; });
     if (idx > 0) {
-        var prev = appData.ultrasounds[idx - 1];
+        var prev = allUSDetail[idx - 1];
         html += renderComparison(prev, us);
     }
 
@@ -2293,18 +2503,10 @@ function renderDashboard() {
     // FEAT-004: Kick counter
     renderKickCounter();
 
-    var uss = appData.ultrasounds || [];
+    var uss = getAllUSData();
 
-    // Buscar dados de US também dos exames (tipo 'us' com specificData)
-    var exams = [];
-    try { exams = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); } catch(e) {}
-    var usExams = exams.filter(function(ex) { return ex.type === 'us' && ex.status === 'done'; })
-        .sort(function(a, b) { return a.date.localeCompare(b.date); });
-
-    // Pegar últimos valores de batimentos, peso, femur, CCN de qualquer fonte
+    // Pegar últimos valores de batimentos, peso, femur, CCN da fonte unificada
     var latestStats = { heartbeat: '--', weight: '--', femur: '--', ccn: '--' };
-
-    // Primeiro dos ultrasounds tradicionais
     if (uss.length > 0) {
         var last = uss[uss.length - 1];
         if (last.heartbeat) latestStats.heartbeat = last.heartbeat;
@@ -2312,24 +2514,6 @@ function renderDashboard() {
         if (last.femur) latestStats.femur = last.femur;
         if (last.ccn) latestStats.ccn = last.ccn;
     }
-
-    // Depois dos exames tipo US (mais recente tem prioridade)
-    usExams.forEach(function(ex) {
-        var d = ex.specificData || {};
-        if (d.exUsHeart) latestStats.heartbeat = d.exUsHeart;
-        if (d.exUsWeight) latestStats.weight = d.exUsWeight;
-        if (d.exUsFemur) latestStats.femur = d.exUsFemur;
-        if (d.exUsCcn) latestStats.ccn = d.exUsCcn;
-        // Também tentar extrair dos resultados texto
-        if (!d.exUsHeart && ex.results) {
-            var hbMatch = ex.results.match(/(?:batimento|bcf|fc\s*fetal)[:\s]*(\d+)/i);
-            if (hbMatch) latestStats.heartbeat = hbMatch[1];
-            var wMatch = ex.results.match(/peso\s*(?:fetal|estimado)?[:\s]*(\d+)/i);
-            if (wMatch) latestStats.weight = wMatch[1];
-            var fMatch = ex.results.match(/f[eê]mur[:\s]*([\d.]+)/i);
-            if (fMatch) latestStats.femur = fMatch[1];
-        }
-    });
 
     document.getElementById('statHeartbeat').textContent = latestStats.heartbeat;
     document.getElementById('statWeight').textContent = latestStats.weight;
@@ -2344,15 +2528,15 @@ function renderDashboard() {
     }
 
     var timeline = document.getElementById('dashTimeline');
-    // Combinar ultrassons e exames na linha do tempo
+    // Combinar ultrassons unificados e exames não-US na linha do tempo
     var timelineItems = [];
     uss.forEach(function(us) {
         timelineItems.push({ type: 'us', date: us.date, data: us });
     });
-    var exams = [];
-    try { exams = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); } catch(e) {}
-    exams.forEach(function(ex) {
-        if (ex.status === 'done' || ex.status === 'scheduled') {
+    var allExams = [];
+    try { allExams = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); } catch(e) {}
+    allExams.forEach(function(ex) {
+        if ((ex.status === 'done' || ex.status === 'scheduled') && ex.type !== 'us') {
             timelineItems.push({ type: 'exam', date: ex.date, data: ex });
         }
     });
@@ -2603,21 +2787,21 @@ function updateChart(type) {
         return;
     }
 
-    // FEAT-005: Peso materno como gráfico
+    // FEAT-005: Peso materno como gráfico (unificado: consultas + tracker)
     if (type === 'momWeight') {
-        var apps = appData.appointments.filter(function(a) { return a.momWeight; }).sort(function(a, b) { return a.date.localeCompare(b.date); });
-        var mLabels = apps.map(function(a) { return formatDate(a.date); });
-        var mData = apps.map(function(a) { return parseFloat(a.momWeight); });
+        var momWeights = getAllMomWeights();
+        var mLabels = momWeights.map(function(w) { return formatDate(w.date); });
+        var mData = momWeights.map(function(w) { return parseFloat(w.weight); });
         mainChart = new Chart(ctx, {
             type: 'line',
             data: { labels: mLabels, datasets: [{ label: 'Peso Materno (kg)', data: mData, borderColor: '#a855f7', backgroundColor: 'rgba(168,85,247,0.2)', borderWidth: 3, pointRadius: 6, fill: true, tension: 0.3 }] },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: false } } }
         });
-        updateChartTable('momWeight', apps.map(function(a) { return { date: a.date, momWeight: parseFloat(a.momWeight), weeks: null, days: null }; }));
+        updateChartTable('momWeight', momWeights.map(function(w) { return { date: w.date, momWeight: parseFloat(w.weight), weeks: null, days: null }; }));
         return;
     }
 
-    var uss = appData.ultrasounds.filter(function(u) { return u[type] !== null && u[type] !== undefined; });
+    var uss = getAllUSData().filter(function(u) { return u[type] !== null && u[type] !== undefined; });
 
     var labels = uss.map(function(u) {
         return u.weeks ? u.weeks + 's' + (u.days ? u.days + 'd' : '') : formatDate(u.date);
@@ -2735,9 +2919,9 @@ function renderParams() {
     renderRefTable('heartRefTable', heartRef);
 
     var statusDiv = document.getElementById('paramStatus');
-    var uss = appData.ultrasounds;
+    var uss = getAllUSData();
     if (uss.length === 0) {
-        statusDiv.innerHTML = '<div class="empty-state"><i class="fas fa-stethoscope"></i><p>Registre ultrassons para ver análise</p></div>';
+        statusDiv.innerHTML = '<div class="empty-state"><i class="fas fa-stethoscope"></i><p>Registre ultrassons ou exames para ver análise</p></div>';
         return;
     }
 
@@ -2784,7 +2968,8 @@ function renderParams() {
 
 function renderRefTable(tableId, refData) {
     var tbody = document.querySelector('#' + tableId + ' tbody');
-    var lastUS = appData.ultrasounds.length > 0 ? appData.ultrasounds[appData.ultrasounds.length - 1] : null;
+    var allUS = getAllUSData();
+    var lastUS = allUS.length > 0 ? allUS[allUS.length - 1] : null;
     var currentWeek = lastUS ? lastUS.weeks : null;
 
     var html = '';
@@ -2824,8 +3009,9 @@ function generatePDF(type) {
         doc.text('Registros de Ultrassom', 15, y);
         y += 8;
 
-        if (appData.ultrasounds.length > 0) {
-            var usData = appData.ultrasounds.map(function(us) {
+        var allUS = getAllUSData();
+        if (allUS.length > 0) {
+            var usData = allUS.map(function(us) {
                 return [
                     formatDate(us.date), us.weeks ? us.weeks + 's' + (us.days || 0) + 'd' : '--',
                     us.heartbeat || '--', us.weight || '--', us.femur || '--',
@@ -2865,8 +3051,9 @@ function generatePDF(type) {
             } catch (e) { /* canvas vazio */ }
         }
 
-        if (appData.ultrasounds.length >= 2) {
-            var uss = appData.ultrasounds;
+        var evoUS = getAllUSData();
+        if (evoUS.length >= 2) {
+            var uss = evoUS;
             var evoData = [];
             for (var i = 1; i < uss.length; i++) {
                 var prev = uss[i-1], curr = uss[i];
@@ -2908,6 +3095,61 @@ function generatePDF(type) {
                 startY: y,
                 head: [['Data', 'Hora', 'Tipo', 'Médico(a)', 'Local', 'Notas']],
                 body: appTableData, theme: 'grid',
+                headStyles: { fillColor: pink, fontSize: 8 },
+                bodyStyles: { fontSize: 7 }, margin: { left: 15, right: 15 }
+            });
+            y = doc.lastAutoTable.finalY + 15;
+        }
+    }
+
+    // Exames laboratoriais no relatório completo
+    if (type === 'complete') {
+        var labExams = [];
+        try { labExams = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]'); } catch(e) {}
+        var doneExams = labExams.filter(function(ex) { return ex.status === 'done' && ex.type !== 'us'; });
+        if (doneExams.length > 0) {
+            if (y > 240) { doc.addPage(); y = 20; }
+            doc.setFontSize(14);
+            doc.setTextColor(darkPink[0], darkPink[1], darkPink[2]);
+            doc.text('Exames Laboratoriais', 15, y);
+            y += 8;
+            var labData = doneExams.map(function(ex) {
+                var typeLabels = { blood: 'Sangue', routine: 'Rotina', glucose: 'Glicemia', prescription: 'Receita', diet: 'Dieta', other: 'Outro' };
+                var resultText = ex.results || '';
+                if (resultText.length > 80) resultText = resultText.substring(0, 77) + '...';
+                return [formatDate(ex.date), typeLabels[ex.type] || ex.type, ex.title, ex.doctor || '--', resultText];
+            });
+            doc.autoTable({
+                startY: y,
+                head: [['Data', 'Tipo', 'Exame', 'Médico(a)', 'Resultado']],
+                body: labData, theme: 'grid',
+                headStyles: { fillColor: pink, fontSize: 8 },
+                bodyStyles: { fontSize: 7 }, margin: { left: 15, right: 15 }
+            });
+            y = doc.lastAutoTable.finalY + 15;
+        }
+    }
+
+    // Peso materno no relatório completo
+    if (type === 'complete') {
+        var momWeights = getAllMomWeights();
+        if (momWeights.length > 0) {
+            if (y > 240) { doc.addPage(); y = 20; }
+            doc.setFontSize(14);
+            doc.setTextColor(darkPink[0], darkPink[1], darkPink[2]);
+            doc.text('Peso Materno', 15, y);
+            y += 8;
+            var preW = parseFloat(cfg.preWeight) || null;
+            var mwData = momWeights.map(function(w) {
+                var row = [formatDate(w.date), parseFloat(w.weight).toFixed(1) + ' kg'];
+                if (preW) row.push((parseFloat(w.weight) - preW >= 0 ? '+' : '') + (parseFloat(w.weight) - preW).toFixed(1) + ' kg');
+                return row;
+            });
+            var mwHead = preW ? [['Data', 'Peso', 'Ganho']] : [['Data', 'Peso']];
+            doc.autoTable({
+                startY: y,
+                head: mwHead,
+                body: mwData, theme: 'grid',
                 headStyles: { fillColor: pink, fontSize: 8 },
                 bodyStyles: { fontSize: 7 }, margin: { left: 15, right: 15 }
             });
@@ -3201,7 +3443,7 @@ function renderAfterChange(changedEntity) {
 // ============ LOAD SAMPLE DATA ============
 function loadSampleData() {
     if (localStorage.getItem('hadassa_sample_loaded') === 'true') return;
-    if (appData.ultrasounds.length > 0) return;
+    if (appData.ultrasounds.length > 0 || getAllUSData().length > 0) return;
 
     appData.config.dum = '2025-11-19';
     appData.config.babyName = 'Hadassa Meira';
@@ -3309,7 +3551,7 @@ function toggleAI() {
 
 function getPregnancyContext() {
     var cfg = appData.config;
-    var uss = appData.ultrasounds;
+    var uss = getAllUSData();
     var apps = appData.appointments;
     var notes = appData.notes;
 
@@ -3628,6 +3870,18 @@ function sendAIMessage() {
 
     // Forms - AUDIT V1.2 [V12-SEC-005]: addEventListener ao inves de onsubmit inline
     document.getElementById('usForm').addEventListener('submit', saveUltrasound);
+    // Toggle medidas colapsável no form de US
+    document.getElementById('usToggleMedidas').addEventListener('click', function() {
+        var section = document.getElementById('usMedidasSection');
+        var icon = document.getElementById('usMedidasIcon');
+        if (section.style.display === 'none') {
+            section.style.display = 'block';
+            icon.className = 'fas fa-chevron-up';
+        } else {
+            section.style.display = 'none';
+            icon.className = 'fas fa-chevron-down';
+        }
+    });
     document.getElementById('appointForm').addEventListener('submit', saveAppointment);
     document.getElementById('noteForm').addEventListener('submit', saveNote);
 

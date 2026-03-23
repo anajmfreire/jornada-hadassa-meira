@@ -8,7 +8,7 @@
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         caches.keys().then(function(keys) {
             keys.forEach(function(key) {
-                if (key.indexOf('hadassa-meira-v') !== -1 && key !== 'hadassa-meira-v17') {
+                if (key.indexOf('hadassa-meira-v') !== -1 && key !== 'hadassa-meira-v22') {
                     caches.delete(key);
                 }
             });
@@ -383,7 +383,7 @@
     <!-- TOOLS (Ferramentas) -->
     <div class="section" id="sec-tools">
         <div class="sub-tabs">
-            <button class="sub-tab active" data-tooltab="weightCalc">Peso Ideal</button>
+            <button class="sub-tab active" data-tooltab="weightCalc">Peso</button>
             <button class="sub-tab" data-tooltab="maternityLeave">Licença</button>
             <button class="sub-tab" data-tooltab="breastTimer">Amamentação</button>
             <button class="sub-tab" data-tooltab="bpHistory">Pressão</button>
@@ -690,68 +690,9 @@
                     <input type="date" id="usDate" required>
                 </div>
                 <div class="form-group">
-                    <label>Título/Tipo *</label>
+                    <label>Nome/Tipo *</label>
                     <input type="text" id="usTitle" placeholder="Ex: Morfológica" required maxlength="200">
                 </div>
-            </div>
-            <div class="form-row-3">
-                <div class="form-group">
-                    <label>Semanas</label>
-                    <input type="number" id="usWeeks" min="1" max="42" placeholder="18">
-                </div>
-                <div class="form-group">
-                    <label>Dias</label>
-                    <input type="number" id="usDays" min="0" max="6" placeholder="1">
-                </div>
-                <div class="form-group">
-                    <label>Batimentos (bpm)</label>
-                    <input type="number" id="usHeartbeat" placeholder="150">
-                </div>
-            </div>
-            <div class="form-row-3">
-                <div class="form-group">
-                    <label>Peso (g)</label>
-                    <input type="number" id="usWeight" step="0.1" placeholder="273">
-                </div>
-                <div class="form-group">
-                    <label>Femur (mm)</label>
-                    <input type="number" id="usFemur" step="0.1" placeholder="25.1">
-                </div>
-                <div class="form-group">
-                    <label>CCN (mm)</label>
-                    <input type="number" id="usCCN" step="0.1" placeholder="87.0">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>DBP (mm)</label>
-                    <input type="number" id="usDBP" step="0.1" placeholder="">
-                </div>
-                <div class="form-group">
-                    <label>CA (mm)</label>
-                    <input type="number" id="usCA" step="0.1" placeholder="">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Colo Uterino (mm)</label>
-                    <input type="number" id="usCervix" step="0.1" placeholder="40.0">
-                </div>
-                <div class="form-group">
-                    <label>Placenta</label>
-                    <select id="usPlacenta">
-                        <option value="">Selecionar</option>
-                        <option>Anterior</option>
-                        <option>Posterior</option>
-                        <option>Fúndica</option>
-                        <option>Lateral</option>
-                        <option>Prévia</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Líquido Amniótico (ILA)</label>
-                <input type="text" id="usILA" placeholder="Normal / valor em cm">
             </div>
             <div class="form-group">
                 <label>Foto do Ultrassom</label>
@@ -761,6 +702,74 @@
             <div class="form-group">
                 <label>Observações</label>
                 <textarea id="usObs" placeholder="Anotações sobre o exame..." maxlength="2000"></textarea>
+            </div>
+            <!-- Medidas opcionais (colapsável) -->
+            <div style="margin:12px 0;">
+                <button type="button" id="usToggleMedidas" style="background:var(--pink-50);border:1px solid var(--pink-200);border-radius:10px;padding:10px 16px;width:100%;cursor:pointer;font-family:'Nunito',sans-serif;font-size:0.85em;color:var(--pink-600);font-weight:600;display:flex;align-items:center;justify-content:space-between;">
+                    <span><i class="fas fa-ruler-combined"></i> Adicionar Medidas (opcional)</span>
+                    <i class="fas fa-chevron-down" id="usMedidasIcon"></i>
+                </button>
+            </div>
+            <div id="usMedidasSection" style="display:none;">
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label>Semanas</label>
+                        <input type="number" id="usWeeks" min="1" max="42" placeholder="18">
+                    </div>
+                    <div class="form-group">
+                        <label>Dias</label>
+                        <input type="number" id="usDays" min="0" max="6" placeholder="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Batimentos (bpm)</label>
+                        <input type="number" id="usHeartbeat" placeholder="150">
+                    </div>
+                </div>
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label>Peso (g)</label>
+                        <input type="number" id="usWeight" step="0.1" placeholder="273">
+                    </div>
+                    <div class="form-group">
+                        <label>Femur (mm)</label>
+                        <input type="number" id="usFemur" step="0.1" placeholder="25.1">
+                    </div>
+                    <div class="form-group">
+                        <label>CCN (mm)</label>
+                        <input type="number" id="usCCN" step="0.1" placeholder="87.0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>DBP (mm)</label>
+                        <input type="number" id="usDBP" step="0.1" placeholder="">
+                    </div>
+                    <div class="form-group">
+                        <label>CA (mm)</label>
+                        <input type="number" id="usCA" step="0.1" placeholder="">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Colo Uterino (mm)</label>
+                        <input type="number" id="usCervix" step="0.1" placeholder="40.0">
+                    </div>
+                    <div class="form-group">
+                        <label>Placenta</label>
+                        <select id="usPlacenta">
+                            <option value="">Selecionar</option>
+                            <option>Anterior</option>
+                            <option>Posterior</option>
+                            <option>Fúndica</option>
+                            <option>Lateral</option>
+                            <option>Prévia</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Líquido Amniótico (ILA)</label>
+                    <input type="text" id="usILA" placeholder="Normal / valor em cm">
+                </div>
             </div>
             <button type="submit" class="btn btn-primary btn-block">
                 <i class="fas fa-save"></i> Salvar Ultrassom

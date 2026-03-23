@@ -54,13 +54,14 @@ function renderWeightCalc(container) {
     var cfg = appData.config;
     var preWeight = parseFloat(cfg.preWeight) || 0;
     var height = parseFloat(cfg.height) || 0;
+    var WEIGHT_KEY = 'hadassa_mom_weights';
 
     if (!preWeight || !height) {
-        container.innerHTML = '<div class="card"><div class="card-title">&#x2696;&#xFE0F; Calculadora de Peso Ideal</div>' +
-            '<p style="font-size:0.85em;color:var(--text-medium);margin-bottom:12px;">Informe seus dados para calcular:</p>' +
+        container.innerHTML = '<div class="card"><div class="card-title">&#x2696;&#xFE0F; Acompanhamento de Peso</div>' +
+            '<p style="font-size:0.85em;color:var(--text-medium);margin-bottom:12px;">Informe seus dados para iniciar o acompanhamento:</p>' +
             '<div class="form-group"><label>Peso antes da gravidez (kg)</label><input type="number" id="toolPreWeight" step="0.1" placeholder="Ex: 60" style="padding:10px;border:2px solid var(--pink-200);border-radius:12px;width:100%;font-family:Nunito,sans-serif;"></div>' +
             '<div class="form-group"><label>Altura (cm)</label><input type="number" id="toolHeight" step="1" placeholder="Ex: 165" style="padding:10px;border:2px solid var(--pink-200);border-radius:12px;width:100%;font-family:Nunito,sans-serif;"></div>' +
-            '<button class="btn btn-primary btn-block" id="toolCalcWeight"><i class="fas fa-calculator"></i> Calcular</button></div>';
+            '<button class="btn btn-primary btn-block" id="toolCalcWeight"><i class="fas fa-calculator"></i> Salvar e Continuar</button></div>';
         document.getElementById('toolCalcWeight').addEventListener('click', function() {
             var w = document.getElementById('toolPreWeight').value;
             var h = document.getElementById('toolHeight').value;
@@ -68,8 +69,10 @@ function renderWeightCalc(container) {
                 appData.config.preWeight = w;
                 appData.config.height = h;
                 saveData(appData);
-                document.getElementById('cfgPreWeight').value = w;
-                document.getElementById('cfgHeight').value = h;
+                var cfgPW = document.getElementById('cfgPreWeight');
+                var cfgH = document.getElementById('cfgHeight');
+                if (cfgPW) cfgPW.value = w;
+                if (cfgH) cfgH.value = h;
                 renderWeightCalc(container);
             }
         });
@@ -79,46 +82,282 @@ function renderWeightCalc(container) {
     var bmi = preWeight / ((height/100) * (height/100));
     var bmiLabel = bmi < 18.5 ? 'Abaixo do peso' : bmi < 25 ? 'Peso normal' : bmi < 30 ? 'Sobrepeso' : 'Obesidade';
     var gainRange = bmi < 18.5 ? [12.5, 18] : bmi < 25 ? [11.5, 16] : bmi < 30 ? [7, 11.5] : [5, 9];
-    var info = calcCurrentGestationalAge();
-    var weeklyGain = (gainRange[0] + gainRange[1]) / 2 / 40;
-    var idealNow = info ? preWeight + (weeklyGain * info.weeks) : preWeight;
+    var info = typeof calcCurrentGestationalAge === 'function' ? calcCurrentGestationalAge() : null;
 
-    // Get actual weight from last appointment
-    var lastWeight = null;
-    if (appData.appointments) {
-        var withWeight = appData.appointments.filter(function(a) { return a.momWeight; }).sort(function(a,b) { return b.date.localeCompare(a.date); });
-        if (withWeight.length > 0) lastWeight = parseFloat(withWeight[0].momWeight);
+    // Carregar todos os pesos
+    var allWeights = [];
+    if (typeof getAllMomWeights === 'function') {
+        allWeights = getAllMomWeights();
+    } else {
+        try { allWeights = JSON.parse(localStorage.getItem(WEIGHT_KEY) || '[]'); } catch(e) {}
     }
+    var lastWeight = allWeights.length > 0 ? parseFloat(allWeights[allWeights.length - 1].weight) : null;
 
-    var html = '<div class="card"><div class="card-title">&#x2696;&#xFE0F; Calculadora de Peso Ideal</div>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px;">';
-    html += '<div style="background:var(--pink-50);padding:12px;border-radius:14px;text-align:center;"><div style="font-size:0.7em;color:var(--text-light);">IMC Pré-Gestacional</div><div style="font-size:1.5em;font-weight:800;color:var(--pink-600);">' + bmi.toFixed(1) + '</div><div style="font-size:0.7em;color:var(--text-medium);">' + bmiLabel + '</div></div>';
-    html += '<div style="background:var(--pink-50);padding:12px;border-radius:14px;text-align:center;"><div style="font-size:0.7em;color:var(--text-light);">Ganho Recomendado</div><div style="font-size:1.5em;font-weight:800;color:var(--pink-600);">' + gainRange[0] + '-' + gainRange[1] + '</div><div style="font-size:0.7em;color:var(--text-medium);">kg na gestação</div></div>';
+    var html = '';
+
+    // === CARD 1: Registrar Peso Semanal (PRIMEIRO, mais importante) ===
+    html += '<div class="card">';
+    html += '<div class="card-title"><i class="fas fa-weight"></i> Registrar Peso Semanal</div>';
+    html += '<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px;">';
+    html += '<div style="flex:1;"><label style="font-size:0.75em;color:var(--text-light);display:block;margin-bottom:4px;">Data</label>';
+    html += '<input type="date" id="quickWeightDate" style="padding:10px;border:2px solid var(--pink-200);border-radius:12px;width:100%;font-family:Nunito,sans-serif;font-size:0.85em;" value="' + (typeof toLocalDateStr === 'function' ? toLocalDateStr(new Date()) : new Date().toISOString().split('T')[0]) + '"></div>';
+    html += '<div style="flex:1;"><label style="font-size:0.75em;color:var(--text-light);display:block;margin-bottom:4px;">Peso (kg)</label>';
+    html += '<input type="number" id="quickWeightValue" step="0.1" placeholder="Ex: 65.5" style="padding:10px;border:2px solid var(--pink-200);border-radius:12px;width:100%;font-family:Nunito,sans-serif;font-size:0.85em;"></div>';
+    html += '<button class="btn btn-primary" id="btnQuickAddWeight" style="padding:10px 16px;white-space:nowrap;"><i class="fas fa-plus"></i> Salvar</button>';
     html += '</div>';
 
+    // Stats cards
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">';
+    html += '<div style="background:var(--pink-50);padding:10px;border-radius:12px;text-align:center;">';
+    html += '<div style="font-size:0.65em;color:var(--text-light);">Peso Atual</div>';
+    html += '<div style="font-size:1.3em;font-weight:800;color:var(--pink-600);">' + (lastWeight ? lastWeight.toFixed(1) : '--') + '</div>';
+    html += '<div style="font-size:0.65em;color:var(--text-medium);">kg</div></div>';
+
+    if (lastWeight) {
+        var gain = lastWeight - preWeight;
+        var gainStatus = info && gain >= (gainRange[0]/40*info.weeks) && gain <= (gainRange[1]/40*info.weeks) ? 'safe' : 'warning';
+        html += '<div style="background:var(--pink-50);padding:10px;border-radius:12px;text-align:center;">';
+        html += '<div style="font-size:0.65em;color:var(--text-light);">Ganho Total</div>';
+        html += '<div style="font-size:1.3em;font-weight:800;color:var(--pink-600);">' + (gain >= 0 ? '+' : '') + gain.toFixed(1) + '</div>';
+        html += '<div style="font-size:0.65em;"><span class="badge badge-' + gainStatus + '" style="font-size:0.9em;">' + (gainStatus === 'safe' ? 'Adequado' : 'Atencao') + '</span></div></div>';
+    } else {
+        html += '<div style="background:var(--pink-50);padding:10px;border-radius:12px;text-align:center;">';
+        html += '<div style="font-size:0.65em;color:var(--text-light);">Ganho Total</div>';
+        html += '<div style="font-size:1.3em;font-weight:800;color:var(--pink-600);">--</div>';
+        html += '<div style="font-size:0.65em;color:var(--text-medium);">kg</div></div>';
+    }
+
+    html += '<div style="background:var(--pink-50);padding:10px;border-radius:12px;text-align:center;">';
+    html += '<div style="font-size:0.65em;color:var(--text-light);">Recomendado</div>';
+    html += '<div style="font-size:1.3em;font-weight:800;color:var(--pink-600);">' + gainRange[0] + '-' + gainRange[1] + '</div>';
+    html += '<div style="font-size:0.65em;color:var(--text-medium);">kg total</div></div>';
+    html += '</div>';
+
+    // Faixa ideal para semana atual
     if (info) {
-        html += '<div style="background:linear-gradient(135deg,var(--pink-50),var(--purple-100));padding:14px;border-radius:14px;margin-bottom:12px;">';
-        html += '<div style="font-size:0.85em;color:var(--text-dark);">Na semana <strong>' + info.weeks + '</strong>, o ideal é estar entre:</div>';
-        html += '<div style="font-size:1.3em;font-weight:800;color:var(--pink-600);margin:4px 0;">' + (preWeight + (gainRange[0]/40*info.weeks)).toFixed(1) + ' — ' + (preWeight + (gainRange[1]/40*info.weeks)).toFixed(1) + ' kg</div>';
-        if (lastWeight) {
-            var gain = lastWeight - preWeight;
-            var status = gain >= (gainRange[0]/40*info.weeks) && gain <= (gainRange[1]/40*info.weeks) ? 'safe' : 'warning';
-            html += '<div style="font-size:0.85em;margin-top:6px;">Seu peso atual: <strong>' + lastWeight.toFixed(1) + ' kg</strong> (ganho de ' + gain.toFixed(1) + ' kg) <span class="badge badge-' + status + '">' + (status === 'safe' ? 'Adequado' : 'Atenção') + '</span></div>';
-        }
+        var idealMin = (preWeight + (gainRange[0]/40*info.weeks)).toFixed(1);
+        var idealMax = (preWeight + (gainRange[1]/40*info.weeks)).toFixed(1);
+        html += '<div style="background:linear-gradient(135deg,var(--pink-50),var(--purple-100));padding:12px;border-radius:12px;margin-bottom:12px;text-align:center;">';
+        html += '<div style="font-size:0.8em;color:var(--text-dark);">Semana <strong>' + info.weeks + '</strong> - Faixa ideal:</div>';
+        html += '<div style="font-size:1.2em;font-weight:800;color:var(--pink-600);">' + idealMin + ' — ' + idealMax + ' kg</div>';
         html += '</div>';
     }
 
-    // Weekly reference table
-    html += '<div style="font-size:0.8em;font-weight:700;color:var(--text-light);margin-bottom:6px;">Referência semanal (ganho cumulativo):</div>';
-    html += '<div style="overflow-x:auto;"><table class="params-table" style="font-size:0.75em;"><thead><tr><th>Semana</th><th>Ganho Mín</th><th>Ganho Máx</th><th>Peso Mín</th><th>Peso Máx</th></tr></thead><tbody>';
+    // Historico de pesos (tabela completa com botão de excluir)
+    if (allWeights.length > 0) {
+        html += '<div style="font-size:0.8em;font-weight:700;color:var(--text-light);margin-bottom:6px;">Historico de Pesagens:</div>';
+        html += '<div style="overflow-x:auto;max-height:250px;overflow-y:auto;">';
+        html += '<table class="params-table" style="font-size:0.8em;"><thead><tr><th>Data</th><th>Peso</th><th>Ganho</th><th></th></tr></thead><tbody>';
+        allWeights.slice().reverse().forEach(function(w) {
+            var wVal = parseFloat(w.weight).toFixed(1);
+            var g = (parseFloat(w.weight) - preWeight);
+            html += '<tr>';
+            html += '<td>' + (typeof formatDate === 'function' ? formatDate(w.date) : w.date) + '</td>';
+            html += '<td><strong>' + wVal + '</strong> kg</td>';
+            html += '<td>' + (g >= 0 ? '+' : '') + g.toFixed(1) + ' kg</td>';
+            if (w.source !== 'consulta') {
+                html += '<td><button class="btn btn-danger btn-small" data-delete-weight="' + escapeHtml(w.date) + '" style="padding:2px 8px;font-size:0.75em;"><i class="fas fa-trash"></i></button></td>';
+            } else {
+                html += '<td><small style="color:var(--text-light);">consulta</small></td>';
+            }
+            html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+    } else {
+        html += '<div class="empty-state" style="padding:15px;"><i class="fas fa-weight"></i><p>Registre seu primeiro peso acima</p></div>';
+    }
+
+    // Canvas para gráfico de peso
+    if (allWeights.length >= 2) {
+        html += '<div style="margin-top:12px;"><canvas id="weightEvolutionChart" height="180"></canvas></div>';
+    }
+
+    html += '</div>';
+
+    // === CARD 2: IMC e Referência (colapsável) ===
+    html += '<div class="card" style="margin-top:12px;">';
+    html += '<div class="card-title" id="toggleRefSection" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">';
+    html += '<span>&#x2696;&#xFE0F; IMC e Tabela de Referência</span>';
+    html += '<i class="fas fa-chevron-down" id="refToggleIcon"></i></div>';
+    html += '<div id="refSectionContent" style="display:none;">';
+
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;">';
+    html += '<div style="background:var(--pink-50);padding:10px;border-radius:12px;text-align:center;">';
+    html += '<div style="font-size:0.65em;color:var(--text-light);">IMC Pre-Gestacional</div>';
+    html += '<div style="font-size:1.3em;font-weight:800;color:var(--pink-600);">' + bmi.toFixed(1) + '</div>';
+    html += '<div style="font-size:0.65em;color:var(--text-medium);">' + bmiLabel + '</div></div>';
+    html += '<div style="background:var(--pink-50);padding:10px;border-radius:12px;text-align:center;">';
+    html += '<div style="font-size:0.65em;color:var(--text-light);">Peso Pre-Gravidez</div>';
+    html += '<div style="font-size:1.3em;font-weight:800;color:var(--pink-600);">' + preWeight.toFixed(1) + '</div>';
+    html += '<div style="font-size:0.65em;color:var(--text-medium);">kg</div></div>';
+    html += '</div>';
+
+    html += '<div style="font-size:0.8em;font-weight:700;color:var(--text-light);margin-bottom:6px;">Referencia semanal (ganho cumulativo):</div>';
+    html += '<div style="overflow-x:auto;"><table class="params-table" style="font-size:0.75em;"><thead><tr><th>Semana</th><th>Ganho Min</th><th>Ganho Max</th><th>Peso Min</th><th>Peso Max</th></tr></thead><tbody>';
     [12,16,20,24,28,32,36,40].forEach(function(w) {
         var minG = (gainRange[0]/40*w).toFixed(1);
         var maxG = (gainRange[1]/40*w).toFixed(1);
         var isNow = info && Math.abs(info.weeks - w) < 2;
         html += '<tr' + (isNow ? ' class="highlight-row"' : '') + '><td>' + w + 's</td><td>+' + minG + '</td><td>+' + maxG + '</td><td>' + (preWeight + parseFloat(minG)).toFixed(1) + '</td><td>' + (preWeight + parseFloat(maxG)).toFixed(1) + '</td></tr>';
     });
-    html += '</tbody></table></div></div>';
+    html += '</tbody></table></div>';
+    html += '</div></div>';
+
+    // === CARD 3: Atalho para pressão arterial ===
+    html += '<div style="margin-top:12px;text-align:center;">';
+    html += '<button class="btn btn-outline" id="btnGoBPHistory" style="font-size:0.85em;"><i class="fas fa-heartbeat"></i> Registrar Pressao Arterial</button>';
+    html += '</div>';
+
     container.innerHTML = html;
+
+    // === EVENTOS ===
+
+    // Toggle seção de referência
+    var toggleRef = document.getElementById('toggleRefSection');
+    if (toggleRef) {
+        toggleRef.addEventListener('click', function() {
+            var content = document.getElementById('refSectionContent');
+            var icon = document.getElementById('refToggleIcon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.className = 'fas fa-chevron-up';
+            } else {
+                content.style.display = 'none';
+                icon.className = 'fas fa-chevron-down';
+            }
+        });
+    }
+
+    // Salvar peso
+    var btnQuickAdd = document.getElementById('btnQuickAddWeight');
+    if (btnQuickAdd) {
+        btnQuickAdd.addEventListener('click', function() {
+            var dateEl = document.getElementById('quickWeightDate');
+            var valEl = document.getElementById('quickWeightValue');
+            var date = dateEl.value;
+            var val = parseFloat(valEl.value);
+            if (!date || isNaN(val) || val <= 0) {
+                if (typeof showToast === 'function') showToast('Informe data e peso validos');
+                return;
+            }
+            if (val < 30 || val > 200) {
+                if (!confirm('O peso ' + val + ' kg parece incomum. Deseja continuar?')) return;
+            }
+            var weights = [];
+            try { weights = JSON.parse(localStorage.getItem(WEIGHT_KEY) || '[]'); } catch(e) {}
+            var existing = weights.findIndex(function(w) { return w.date === date; });
+            if (existing !== -1) {
+                weights[existing].weight = val;
+            } else {
+                weights.push({ date: date, weight: val });
+            }
+            weights.sort(function(a, b) { return a.date.localeCompare(b.date); });
+            localStorage.setItem(WEIGHT_KEY, JSON.stringify(weights));
+            if (typeof showToast === 'function') showToast('Peso registrado: ' + val.toFixed(1) + ' kg');
+            renderWeightCalc(container);
+        });
+    }
+
+    // Excluir peso
+    container.querySelectorAll('[data-delete-weight]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var dateToDelete = btn.dataset.deleteWeight;
+            var weights = [];
+            try { weights = JSON.parse(localStorage.getItem(WEIGHT_KEY) || '[]'); } catch(e2) {}
+            weights = weights.filter(function(w) { return w.date !== dateToDelete; });
+            localStorage.setItem(WEIGHT_KEY, JSON.stringify(weights));
+            renderWeightCalc(container);
+        });
+    });
+
+    // Atalho pressão arterial
+    var btnGoBP = document.getElementById('btnGoBPHistory');
+    if (btnGoBP) {
+        btnGoBP.addEventListener('click', function() {
+            renderTool('bpHistory');
+            document.querySelectorAll('[data-tooltab]').forEach(function(t) { t.classList.remove('active'); });
+            var targetTab = document.querySelector('[data-tooltab="bpHistory"]');
+            if (targetTab) targetTab.classList.add('active');
+        });
+    }
+
+    // Gráfico de evolução de peso
+    if (allWeights.length >= 2) {
+        var chartCanvas = document.getElementById('weightEvolutionChart');
+        if (chartCanvas && typeof Chart !== 'undefined') {
+            var labels = allWeights.map(function(w) { return typeof formatDate === 'function' ? formatDate(w.date) : w.date; });
+            var dataPoints = allWeights.map(function(w) { return parseFloat(w.weight); });
+
+            // Faixa ideal para cada ponto
+            var idealMinData = [];
+            var idealMaxData = [];
+            allWeights.forEach(function(w) {
+                if (cfg.dum) {
+                    var wInfo = typeof calcWeeksFromDUM === 'function' ? calcWeeksFromDUM(cfg.dum, w.date) : null;
+                    if (wInfo) {
+                        idealMinData.push(preWeight + (gainRange[0]/40 * wInfo.weeks));
+                        idealMaxData.push(preWeight + (gainRange[1]/40 * wInfo.weeks));
+                    } else {
+                        idealMinData.push(null);
+                        idealMaxData.push(null);
+                    }
+                } else {
+                    idealMinData.push(null);
+                    idealMaxData.push(null);
+                }
+            });
+
+            new Chart(chartCanvas, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Seu Peso',
+                            data: dataPoints,
+                            borderColor: '#ec4899',
+                            backgroundColor: 'rgba(236,72,153,0.1)',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#ec4899',
+                            fill: false,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Min Ideal',
+                            data: idealMinData,
+                            borderColor: 'rgba(34,197,94,0.4)',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        {
+                            label: 'Max Ideal',
+                            data: idealMaxData,
+                            borderColor: 'rgba(34,197,94,0.4)',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: '-1',
+                            backgroundColor: 'rgba(34,197,94,0.08)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 10, family: 'Nunito' } } }
+                    },
+                    scales: {
+                        y: { title: { display: true, text: 'kg', font: { size: 10 } } },
+                        x: { ticks: { font: { size: 9 }, maxRotation: 45 } }
+                    }
+                }
+            });
+        }
+    }
 }
 
 // --- Maternity Leave Calculator ---
@@ -508,8 +747,9 @@ function renderGlossary() {
 
 // ============ WEIGHT CALCULATOR FOR BABY ============
 function renderBabyWeightCalc() {
-    if (!appData.ultrasounds || appData.ultrasounds.length === 0) return '';
-    var last = appData.ultrasounds[appData.ultrasounds.length - 1];
+    var allUS = typeof getAllUSData === 'function' ? getAllUSData() : (appData.ultrasounds || []);
+    if (allUS.length === 0) return '';
+    var last = allUS[allUS.length - 1];
     if (!last.weight || !last.weeks) return '';
     var ref = weightRef[last.weeks];
     if (!ref) return '';
@@ -595,10 +835,121 @@ function renderTool(tab) {
     if (!container) return;
     switch (tab) {
         case 'weightCalc': renderWeightCalc(container); break;
+        case 'momWeightTracker': renderMomWeightTracker(container); break;
         case 'maternityLeave': renderMaternityLeave(container); break;
         case 'breastTimer': renderBreastTimer(container); break;
         case 'bpHistory': renderBPHistory(container); break;
         case 'music': renderMusic(container); break;
         case 'bumpTimeline': renderBumpTimeline(container); break;
     }
+}
+
+// --- Mom Weight Tracker (Registro de Peso da Mãe) ---
+function renderMomWeightTracker(container) {
+    var WEIGHT_KEY = 'hadassa_mom_weights';
+    var weights = [];
+    try { weights = JSON.parse(localStorage.getItem(WEIGHT_KEY) || '[]'); } catch(e) {}
+
+    var cfg = appData.config;
+    var preWeight = parseFloat(cfg.preWeight) || 0;
+    var height = parseFloat(cfg.height) || 0;
+    var info = typeof calcCurrentGestationalAge === 'function' ? calcCurrentGestationalAge() : null;
+
+    // Also include weights from appointments
+    var allWeights = weights.slice();
+    if (appData.appointments) {
+        appData.appointments.forEach(function(a) {
+            if (a.momWeight) {
+                var exists = allWeights.some(function(w) { return w.date === a.date; });
+                if (!exists) {
+                    allWeights.push({ date: a.date, weight: parseFloat(a.momWeight), source: 'consulta' });
+                }
+            }
+        });
+    }
+    allWeights.sort(function(a, b) { return a.date.localeCompare(b.date); });
+
+    var html = '<div class="card"><div class="card-title"><i class="fas fa-weight"></i> Registrar Peso</div>';
+
+    // Form to add new weight
+    html += '<div style="display:flex;gap:8px;margin-bottom:15px;align-items:flex-end;">';
+    html += '<div style="flex:1;"><label style="font-size:0.75em;color:var(--text-light);display:block;margin-bottom:4px;">Data</label><input type="date" id="momWeightDate" style="padding:10px;border:2px solid var(--pink-200);border-radius:12px;width:100%;font-family:Nunito,sans-serif;font-size:0.85em;" value="' + (typeof toLocalDateStr === 'function' ? toLocalDateStr(new Date()) : new Date().toISOString().split('T')[0]) + '"></div>';
+    html += '<div style="flex:1;"><label style="font-size:0.75em;color:var(--text-light);display:block;margin-bottom:4px;">Peso (kg)</label><input type="number" id="momWeightValue" step="0.1" placeholder="Ex: 65.5" style="padding:10px;border:2px solid var(--pink-200);border-radius:12px;width:100%;font-family:Nunito,sans-serif;font-size:0.85em;"></div>';
+    html += '<button class="btn btn-primary" id="btnAddMomWeight" style="padding:10px 16px;white-space:nowrap;"><i class="fas fa-plus"></i></button>';
+    html += '</div>';
+
+    // Current stats
+    if (allWeights.length > 0) {
+        var lastW = allWeights[allWeights.length - 1];
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;">';
+        html += '<div style="background:var(--pink-50);padding:12px;border-radius:14px;text-align:center;"><div style="font-size:0.7em;color:var(--text-light);">Peso Atual</div><div style="font-size:1.5em;font-weight:800;color:var(--pink-600);">' + parseFloat(lastW.weight).toFixed(1) + '</div><div style="font-size:0.7em;color:var(--text-medium);">kg</div></div>';
+        if (preWeight) {
+            var gain = (parseFloat(lastW.weight) - preWeight).toFixed(1);
+            html += '<div style="background:var(--pink-50);padding:12px;border-radius:14px;text-align:center;"><div style="font-size:0.7em;color:var(--text-light);">Ganho Total</div><div style="font-size:1.5em;font-weight:800;color:var(--pink-600);">' + (gain >= 0 ? '+' : '') + gain + '</div><div style="font-size:0.7em;color:var(--text-medium);">kg</div></div>';
+        }
+        html += '</div>';
+    }
+
+    // History table
+    if (allWeights.length > 0) {
+        html += '<div style="font-size:0.8em;font-weight:700;color:var(--text-light);margin-bottom:6px;">Histórico:</div>';
+        html += '<div style="overflow-x:auto;max-height:250px;overflow-y:auto;"><table class="params-table" style="font-size:0.8em;"><thead><tr><th>Data</th><th>Peso</th>';
+        if (preWeight) html += '<th>Ganho</th>';
+        html += '<th></th></tr></thead><tbody>';
+
+        allWeights.slice().reverse().forEach(function(w) {
+            var weightVal = parseFloat(w.weight).toFixed(1);
+            html += '<tr><td>' + (typeof formatDate === 'function' ? formatDate(w.date) : w.date) + '</td>';
+            html += '<td>' + weightVal + ' kg</td>';
+            if (preWeight) {
+                var g = (parseFloat(w.weight) - preWeight).toFixed(1);
+                html += '<td>' + (g >= 0 ? '+' : '') + g + ' kg</td>';
+            }
+            if (w.source !== 'consulta') {
+                html += '<td><button class="btn btn-danger btn-small" data-delete-weight="' + escapeHtml(w.date) + '" style="padding:2px 8px;font-size:0.75em;"><i class="fas fa-trash"></i></button></td>';
+            } else {
+                html += '<td><small style="color:var(--text-light);">consulta</small></td>';
+            }
+            html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+    } else {
+        html += '<div class="empty-state" style="padding:20px;"><i class="fas fa-weight"></i><p>Nenhum peso registrado ainda</p></div>';
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+
+    // Event: add weight
+    document.getElementById('btnAddMomWeight').addEventListener('click', function() {
+        var dateEl = document.getElementById('momWeightDate');
+        var valEl = document.getElementById('momWeightValue');
+        var date = dateEl.value;
+        var val = parseFloat(valEl.value);
+        if (!date || isNaN(val) || val <= 0) {
+            if (typeof showToast === 'function') showToast('Informe data e peso válidos');
+            return;
+        }
+        var existing = weights.findIndex(function(w) { return w.date === date; });
+        if (existing !== -1) {
+            weights[existing].weight = val;
+        } else {
+            weights.push({ date: date, weight: val });
+        }
+        weights.sort(function(a, b) { return a.date.localeCompare(b.date); });
+        localStorage.setItem(WEIGHT_KEY, JSON.stringify(weights));
+        if (typeof showToast === 'function') showToast('Peso registrado!');
+        renderMomWeightTracker(container);
+    });
+
+    // Event: delete weight
+    container.querySelectorAll('[data-delete-weight]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var dateToDelete = btn.dataset.deleteWeight;
+            weights = weights.filter(function(w) { return w.date !== dateToDelete; });
+            localStorage.setItem(WEIGHT_KEY, JSON.stringify(weights));
+            renderMomWeightTracker(container);
+        });
+    });
 }

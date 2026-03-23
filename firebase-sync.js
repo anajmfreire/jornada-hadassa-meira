@@ -174,7 +174,7 @@
             var extraKeys = [
                 'hadassa_diary', 'hadassa_symptoms', 'hadassa_exams', 'hadassa_baby_names',
                 'hadassa_kick_history', 'hadassa_contractions', 'hadassa_exam_checklist',
-                'hadassa_bp_log', 'hadassa_bf_history', 'hadassa_custom_symptoms',
+                'hadassa_bp_log', 'hadassa_bf_history', 'hadassa_custom_symptoms', 'hadassa_mom_weights',
                 'hadassa_list_enxoval', 'hadassa_list_malaMae', 'hadassa_list_malaBebe',
                 'hadassa_list_doctorQuestions', 'hadassa_list_birthPlan',
                 'hadassa_weekly_todos', 'hadassa_letter_to_baby', 'hadassa_hydration',
