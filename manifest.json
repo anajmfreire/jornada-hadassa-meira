@@ -5,21 +5,26 @@
     "start_url": "./index.html",
     "scope": "./",
     "display": "standalone",
-    "background_color": "#fdf2f8",
+    "background_color": "#ec4899",
     "theme_color": "#ec4899",
     "orientation": "portrait",
     "categories": ["health", "lifestyle"],
     "lang": "pt-BR",
     "icons": [
         {
-            "src": "icon-192.svg",
-            "sizes": "any",
-            "type": "image/svg+xml"
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
         },
         {
-            "src": "icon-maskable.svg",
+            "src": "icon-512.png",
             "sizes": "512x512",
-            "type": "image/svg+xml",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
             "purpose": "maskable"
         }
     ],
@@ -28,17 +33,17 @@
         {
             "name": "Meu Bebê",
             "url": "./index.html#weekly",
-            "icons": [{"src": "icon-192.svg", "sizes": "any", "type": "image/svg+xml"}]
+            "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png"}]
         },
         {
             "name": "Diário",
             "url": "./index.html#diary",
-            "icons": [{"src": "icon-192.svg", "sizes": "any", "type": "image/svg+xml"}]
+            "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png"}]
         },
         {
             "name": "Exames",
             "url": "./index.html#exams",
-            "icons": [{"src": "icon-192.svg", "sizes": "any", "type": "image/svg+xml"}]
+            "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png"}]
         }
     ]
 }
