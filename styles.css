@@ -181,6 +181,75 @@ body::after {
     font-size: 1.1em;
 }
 
+/* Week Calendar (mini calendar strip) */
+.week-calendar {
+    background: white;
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+.week-calendar .cal-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 16px;
+    transition: all 0.2s;
+    min-width: 44px;
+}
+.week-calendar .cal-day:hover {
+    background: var(--pink-50);
+}
+.week-calendar .cal-day .day-label {
+    font-size: 0.7em;
+    font-weight: 700;
+    color: var(--text-light);
+    text-transform: uppercase;
+}
+.week-calendar .cal-day .day-number {
+    font-size: 1.15em;
+    font-weight: 800;
+    color: var(--text-dark);
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+.week-calendar .cal-day.today .day-number {
+    background: var(--pink-600);
+    color: white;
+}
+.week-calendar .cal-day.today .day-label {
+    color: var(--pink-600);
+}
+.week-calendar .cal-day.has-event .day-number {
+    border: 2px solid var(--pink-400);
+}
+.week-calendar .cal-day.has-event.today .day-number {
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px var(--pink-600);
+}
+.week-calendar .cal-month {
+    font-size: 0.85em;
+    font-weight: 800;
+    color: var(--text-dark);
+    text-align: center;
+    padding: 0 8px;
+    min-width: 60px;
+}
+.dark-mode .week-calendar {
+    background: var(--soft-white);
+}
+
 /* Navigation */
 .nav {
     display: flex;

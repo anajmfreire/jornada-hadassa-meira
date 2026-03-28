@@ -530,6 +530,107 @@ function updateWeekBanner() {
     if (headerSub) headerSub.textContent = cfg.babyName ? cfg.babyName + ' (' + (cfg.babySex || '') + ') \u{1F49C}' : '';
 }
 
+// ============ WEEK CALENDAR STRIP ============
+function renderWeekCalendar() {
+    var container = document.getElementById('weekCalendar');
+    if (!container) return;
+
+    var today = new Date();
+    var dayOfWeek = today.getDay(); // 0=Dom, 1=Seg...
+
+    // Construir array de 7 dias (Dom a Sáb) da semana atual
+    var weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - dayOfWeek);
+
+    var dayLabels = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+    var monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+    // Buscar datas com eventos (consultas e exames agendados)
+    var eventDates = {};
+    if (appData.appointments) {
+        appData.appointments.forEach(function(a) {
+            if (a.date) eventDates[a.date] = (eventDates[a.date] || 0) + 1;
+        });
+    }
+    try {
+        var exams = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]');
+        exams.forEach(function(ex) {
+            if (ex.scheduledDate && ex.status === 'scheduled') eventDates[ex.scheduledDate] = (eventDates[ex.scheduledDate] || 0) + 1;
+            if (ex.date) eventDates[ex.date] = (eventDates[ex.date] || 0) + 1;
+        });
+    } catch(e) {}
+
+    var html = '';
+
+    for (var i = 0; i < 7; i++) {
+        var d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        var dateStr = toLocalDateStr(d);
+        var isToday = d.toDateString() === today.toDateString();
+        var hasEvent = eventDates[dateStr];
+
+        var classes = 'cal-day';
+        if (isToday) classes += ' today';
+        if (hasEvent) classes += ' has-event';
+
+        html += '<div class="' + classes + '" data-caldate="' + dateStr + '">';
+        html += '<span class="day-label">' + dayLabels[i] + '</span>';
+        html += '<span class="day-number">' + d.getDate() + '</span>';
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
+
+    // Click em dia com evento → mostrar detalhes
+    container.querySelectorAll('.cal-day').forEach(function(el) {
+        el.addEventListener('click', function() {
+            var date = el.dataset.caldate;
+            showCalendarDayDetail(date);
+        });
+    });
+}
+
+function showCalendarDayDetail(dateStr) {
+    var events = [];
+    var dateLabel = formatDate(dateStr);
+
+    // Consultas nesse dia
+    if (appData.appointments) {
+        appData.appointments.forEach(function(a) {
+            if (a.date === dateStr) {
+                events.push('<div style="padding:8px;background:var(--pink-50);border-radius:10px;margin-bottom:6px;">' +
+                    '<strong style="color:var(--pink-600);">' + escapeHtml(a.type || 'Consulta') + '</strong>' +
+                    (a.time ? ' <span style="color:var(--text-light);">' + escapeHtml(a.time) + '</span>' : '') +
+                    (a.doctor ? '<br><small>Dr(a). ' + escapeHtml(a.doctor) + '</small>' : '') +
+                    (a.location ? '<br><small>' + escapeHtml(a.location) + '</small>' : '') +
+                    '</div>');
+            }
+        });
+    }
+
+    // Exames nesse dia
+    try {
+        var exams = typeof getExams === 'function' ? getExams() : JSON.parse(localStorage.getItem('hadassa_exams') || '[]');
+        exams.forEach(function(ex) {
+            if (ex.date === dateStr || ex.scheduledDate === dateStr) {
+                events.push('<div style="padding:8px;background:var(--purple-50);border-radius:10px;margin-bottom:6px;">' +
+                    '<strong style="color:#8b5cf6;">' + escapeHtml(ex.title || 'Exame') + '</strong>' +
+                    '<br><small>' + escapeHtml(ex.type || '') + '</small>' +
+                    '</div>');
+            }
+        });
+    } catch(e) {}
+
+    if (events.length === 0) {
+        events.push('<div style="text-align:center;color:var(--text-light);padding:15px;">Nenhum evento neste dia</div>');
+    }
+
+    var content = '<div style="margin-bottom:10px;font-weight:700;color:var(--pink-600);">' + dateLabel + '</div>' + events.join('');
+    document.getElementById('detailTitle').innerHTML = '<i class="fas fa-calendar-day"></i> Agenda do Dia';
+    document.getElementById('detailContent').innerHTML = content;
+    openModal('detailModal');
+}
+
 // ============ FORMAT HELPERS ============
 /**
  * Formata data de YYYY-MM-DD para DD/MM/YYYY.
@@ -3550,6 +3651,7 @@ function handleFab() {
 // AUDIT V1.2 [V12-PERF-001]: renderAll() apenas para init. Operacoes usam renderAfterChange().
 function renderAll() {
     updateWeekBanner();
+    renderWeekCalendar();
     renderDashboard();
     renderUltrasounds();
     renderAppointments();
