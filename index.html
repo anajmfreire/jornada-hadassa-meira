@@ -118,7 +118,23 @@ var VALID_CODES = [
 
 var TRIAL_DAYS = 7; // Dias de teste grátis
 
+function isPlayStoreApp() {
+    // Detectar se está rodando como TWA (instalado pela Play Store)
+    // TWA roda em standalone mode sem barra de URL do Chrome
+    var isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    var isTWA = document.referrer.includes('android-app://') ||
+                (isStandalone && /Android/i.test(navigator.userAgent));
+    return isTWA;
+}
+
 function checkAccess() {
+    // Se veio da Play Store (app pago) → acesso total, sem bloqueio
+    if (isPlayStoreApp()) {
+        localStorage.setItem('mg_access_granted', 'true');
+        localStorage.setItem('mg_access_code', 'PLAY-STORE');
+        return true;
+    }
+
     // Verificar se já ativou com código
     if (localStorage.getItem('mg_access_granted') === 'true') return true;
 
