@@ -1,6 +1,6 @@
 {
-    "name": "Minha Gestação - Diário da Gravidez",
-    "short_name": "Minha Gestação",
+    "name": "Mamãe App - Diário da Gravidez",
+    "short_name": "Mamãe App",
     "description": "Acompanhe cada semana da sua gravidez: ultrassons, peso, sintomas, exames, IA e muito mais. Tudo em um só app.",
     "start_url": "./index.html",
     "scope": "./",

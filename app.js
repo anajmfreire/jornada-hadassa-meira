@@ -388,11 +388,11 @@ function showSection(sectionName) {
         notes: 'Anotações', config: 'Configurações'
     };
     var babyName = appData.config.babyName;
-    document.title = (sectionNames[sectionName] || 'Início') + ' | ' + (babyName ? 'A Jornada de ' + babyName : 'Minha Gestação');
+    document.title = (sectionNames[sectionName] || 'Início') + ' | ' + (babyName ? 'A Jornada de ' + babyName : 'Mamãe App');
     // Atualizar título e subtítulo do header
     var titleEl = document.getElementById('appTitle');
     var subtitleEl = document.getElementById('appSubtitle');
-    if (titleEl) titleEl.textContent = babyName ? 'A Jornada de ' + babyName : 'Minha Gestação';
+    if (titleEl) titleEl.textContent = babyName ? 'A Jornada de ' + babyName : 'Mamãe App';
     if (subtitleEl && babyName) {
         var sexLabel = appData.config.babySex || '';
         subtitleEl.textContent = babyName + (sexLabel ? ' (' + sexLabel + ')' : '');
@@ -534,7 +534,7 @@ function updateWeekBanner() {
 
     var headerH1 = document.getElementById('appTitle');
     var headerSub = document.getElementById('appSubtitle');
-    if (headerH1) headerH1.textContent = cfg.babyName ? 'A Jornada de ' + cfg.babyName : 'Minha Gestação';
+    if (headerH1) headerH1.textContent = cfg.babyName ? 'A Jornada de ' + cfg.babyName : 'Mamãe App';
     if (headerSub) headerSub.textContent = cfg.babyName ? cfg.babyName + ' (' + (cfg.babySex || '') + ') \u{1F49C}' : '';
 }
 
@@ -1476,7 +1476,7 @@ function shareCard() {
             if (navigator.share) {
                 var file = new File([blob], 'jornada_' + cfg.babyName.replace(/\s/g, '_') + '.png', { type: 'image/png' });
                 navigator.share({
-                    title: cfg.babyName ? 'A Jornada de ' + cfg.babyName : 'Minha Gestação',
+                    title: cfg.babyName ? 'A Jornada de ' + cfg.babyName : 'Mamãe App',
                     text: cfg.babyName + ' - ' + (info ? info.weeks + ' semanas' : '') + ' de gestacao!',
                     files: [file]
                 }).catch(function() {
@@ -1626,7 +1626,7 @@ function printSummary() {
     html += '.info{margin:15px 0;}.label{font-weight:bold;color:#666;}.value{color:#333;}';
     html += 'table{width:100%;border-collapse:collapse;margin:15px 0;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}';
     html += 'th{background:#fdf2f8;color:#be185d;}.footer{text-align:center;color:#999;font-size:0.8em;margin-top:30px;}</style></head><body>';
-    html += '<h1>\u{1F476} ' + (cfg.babyName ? 'A Jornada de ' + escapeHtml(cfg.babyName) : 'Minha Gestação') + '</h1>';
+    html += '<h1>\u{1F476} ' + (cfg.babyName ? 'A Jornada de ' + escapeHtml(cfg.babyName) : 'Mamãe App') + '</h1>';
     html += '<div class="info"><span class="label">Mãe:</span> <span class="value">' + escapeHtml(cfg.momName) + '</span></div>';
     html += '<div class="info"><span class="label">Bebê:</span> <span class="value">' + escapeHtml(cfg.babyName) + ' (' + escapeHtml(cfg.babySex) + ')</span></div>';
     if (cfg.doctor) html += '<div class="info"><span class="label">Médico(a):</span> <span class="value">' + escapeHtml(cfg.doctor) + '</span></div>';
@@ -1669,7 +1669,7 @@ function printSummary() {
         html += '</ul>';
     }
 
-    html += '<div class="footer">Gerado em ' + formatDate(toLocalDateStr(new Date())) + ' | ' + (cfg.babyName ? 'A Jornada de ' + escapeHtml(cfg.babyName) : 'Minha Gestação') + '</div>';
+    html += '<div class="footer">Gerado em ' + formatDate(toLocalDateStr(new Date())) + ' | ' + (cfg.babyName ? 'A Jornada de ' + escapeHtml(cfg.babyName) : 'Mamãe App') + '</div>';
     html += '</body></html>';
 
     printWindow.document.write(html);
@@ -3427,7 +3427,7 @@ function generatePDF(type) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text(cfg.babyName ? 'A Jornada de ' + cfg.babyName : 'Minha Gestação', 105, 15, { align: 'center' });
+    doc.text(cfg.babyName ? 'A Jornada de ' + cfg.babyName : 'Mamãe App', 105, 15, { align: 'center' });
     doc.setFontSize(10);
     doc.text(cfg.babyName + ' (' + cfg.babySex + ') | Mae: ' + cfg.momName, 105, 23, { align: 'center' });
     doc.text('Gerado em: ' + formatDate(toLocalDateStr(new Date())), 105, 30, { align: 'center' });
@@ -4009,7 +4009,7 @@ function getPregnancyContext() {
 }
 
 function getSystemPrompt() {
-    return 'Você é a assistente IA de gravidez da ' + (appData.config.momName || 'mamãe') + ', integrada ao app "Minha Gestação".\n\n' +
+    return 'Você é a assistente IA de gravidez da ' + (appData.config.momName || 'mamãe') + ', integrada ao app "Mamãe App".\n\n' +
         'REGRAS IMPORTANTES:\n' +
         '- Responda SEMPRE em português brasileiro, de forma acolhedora, carinhosa e profissional\n' +
         '- Use emojis com moderação para deixar as respostas mais fofas\n' +
@@ -4182,7 +4182,7 @@ function sendAIMessage() {
     if (splash) {
         var splashName = document.getElementById('splashName');
         if (splashName) {
-            splashName.textContent = appData.config.babyName ? 'A Jornada de ' + appData.config.babyName : 'Minha Gestação';
+            splashName.textContent = appData.config.babyName ? 'A Jornada de ' + appData.config.babyName : 'Mamãe App';
         }
         setTimeout(function() {
             splash.style.opacity = '0';

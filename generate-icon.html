@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Gerar Ícone - Mamãe App</title></head>
+<body style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#f5f5f5;font-family:Arial;gap:20px;">
+<h2>Ícone Mamãe App — Clique para baixar</h2>
+<canvas id="c" width="512" height="512" style="border:1px solid #ddd;border-radius:20px;background:white;"></canvas>
+<div style="display:flex;gap:15px;">
+<button onclick="download(512)" style="padding:15px 40px;font-size:16px;background:#ec4899;color:white;border:none;border-radius:12px;cursor:pointer;">Baixar 512x512</button>
+<button onclick="download(192)" style="padding:15px 40px;font-size:16px;background:#a855f7;color:white;border:none;border-radius:12px;cursor:pointer;">Baixar 192x192</button>
+</div>
+
+<script>
+var canvas = document.getElementById('c');
+var ctx = canvas.getContext('2d');
+
+function draw() {
+    ctx.clearRect(0, 0, 512, 512);
+
+    // Background rounded square with gradient
+    var grad = ctx.createLinearGradient(0, 0, 512, 512);
+    grad.addColorStop(0, '#f472b6');
+    grad.addColorStop(0.5, '#ec4899');
+    grad.addColorStop(1, '#db2777');
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 512, 512, 110);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Subtle inner glow
+    var glow = ctx.createRadialGradient(256, 230, 50, 256, 256, 280);
+    glow.addColorStop(0, 'rgba(255,255,255,0.15)');
+    glow.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Large heart - clean and centered
+    ctx.save();
+    ctx.translate(256, 210);
+    ctx.scale(3.2, 3.2);
+    ctx.beginPath();
+    ctx.moveTo(0, 18);
+    ctx.bezierCurveTo(-2, 14, -40, -20, -40, -35);
+    ctx.bezierCurveTo(-40, -55, -20, -55, 0, -30);
+    ctx.bezierCurveTo(20, -55, 40, -55, 40, -35);
+    ctx.bezierCurveTo(40, -20, 2, 14, 0, 18);
+    ctx.fillStyle = 'white';
+    ctx.shadowColor = 'rgba(0,0,0,0.1)';
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetY = 5;
+    ctx.fill();
+    ctx.restore();
+
+    // Baby footprint inside heart (simple, recognizable)
+    ctx.save();
+    ctx.translate(235, 180);
+    ctx.scale(1, 1);
+
+    // Left foot
+    drawFoot(ctx, 0, 0, 0.9);
+    // Right foot (slightly offset and rotated)
+    drawFoot(ctx, 42, -8, 0.85);
+
+    ctx.restore();
+
+    // App name below
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.font = 'bold 48px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.1)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 2;
+    ctx.fillText('Mamãe App', 256, 440);
+    ctx.shadowBlur = 0;
+}
+
+function drawFoot(ctx, x, y, scale) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    // Foot sole (oval)
+    ctx.fillStyle = '#ec4899';
+    ctx.beginPath();
+    ctx.ellipse(20, 45, 18, 28, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Toes (5 small circles)
+    var toes = [
+        [6, 10, 7],
+        [18, 4, 7.5],
+        [31, 6, 7],
+        [40, 14, 6],
+        [45, 24, 5.5]
+    ];
+    toes.forEach(function(t) {
+        ctx.beginPath();
+        ctx.arc(t[0], t[1], t[2], 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    ctx.restore();
+}
+
+draw();
+
+function download(size) {
+    if (size === 512) {
+        var a = document.createElement('a');
+        a.download = 'mamae-app-icon-512.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+    } else {
+        var c2 = document.createElement('canvas');
+        c2.width = size; c2.height = size;
+        c2.getContext('2d').drawImage(canvas, 0, 0, size, size);
+        var a = document.createElement('a');
+        a.download = 'mamae-app-icon-' + size + '.png';
+        a.href = c2.toDataURL('image/png');
+        a.click();
+    }
+}
+</script>
+</body></html>
