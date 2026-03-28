@@ -2873,11 +2873,14 @@ function renderDashboard() {
 
     // Upcoming appointments
     var upDiv = document.getElementById('upcomingAppointments');
+    var upDivTop = document.getElementById('upcomingAppointmentsTop');
+    var topCard = document.getElementById('nextAppointmentsTop');
     var today = toLocalDateStr(new Date());
     var upcoming = appData.appointments.filter(function(a) { return a.date >= today; }).sort(function(a, b) { return a.date.localeCompare(b.date); }).slice(0, 3);
 
     if (upcoming.length === 0) {
-        upDiv.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-plus"></i><p>Nenhuma consulta próxima</p></div>';
+        if (upDiv) upDiv.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-plus"></i><p>Nenhuma consulta próxima</p></div>';
+        if (topCard) topCard.style.display = 'none';
     } else {
         var upHtml = '';
         upcoming.forEach(function(a) {
@@ -2894,7 +2897,10 @@ function renderDashboard() {
                 '</div>' +
             '</div>';
         });
-        upDiv.innerHTML = upHtml;
+        if (upDiv) upDiv.innerHTML = upHtml;
+        // Mostrar também no topo do dashboard
+        if (upDivTop) upDivTop.innerHTML = upHtml;
+        if (topCard) topCard.style.display = 'block';
     }
 }
 
