@@ -28,7 +28,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js" integrity="sha384-b8MpgG2ZzWN6OPAtiB1JiBmDr9MpTt3NKK6KQf61hC/L7X4wJrvoTeVmMFPgp3nL" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" integrity="sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g" crossorigin="anonymous">
-    <link rel="stylesheet" href="styles.css?v=20260328">
+    <link rel="stylesheet" href="styles.css?v=20260328b">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -187,37 +187,45 @@ if (!checkAccess()) {
 .shake { animation: shake 0.4s ease; }
 </style>
 
-<!-- Header -->
-<header class="header" role="banner">
-    <div class="baby-icon" aria-hidden="true">&#x1F476;&#x1F338;</div>
-    <h1 id="appTitle">Minha Gestação</h1>
-    <div class="subtitle" id="appSubtitle" aria-label="Informações do bebê"></div>
-</header>
-<button class="theme-toggle" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar modo escuro">
-    <i class="fas fa-moon" id="themeIcon"></i>
-</button>
+<!-- Hero Section (estilo Flo) -->
+<div class="hero-pregnancy" id="heroPregnancy">
+    <!-- Top bar -->
+    <div class="hero-topbar">
+        <div id="heroMonthLabel" style="font-weight:800;font-size:1em;"></div>
+        <button class="theme-toggle" id="themeToggle" aria-label="Alternar modo escuro" title="Alternar modo escuro" style="position:static;background:rgba(255,255,255,0.2);border:none;color:white;width:36px;height:36px;border-radius:50%;cursor:pointer;">
+            <i class="fas fa-moon" id="themeIcon"></i>
+        </button>
+    </div>
 
-<!-- Week Banner -->
-<div class="week-banner" id="weekBanner">
-    <div class="week-info">
-        <div class="week-number" id="currentWeek">--</div>
-        <div class="week-label">semanas</div>
-    </div>
-    <div class="progress-section">
-        <div class="progress-bar-container">
-            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+    <!-- Calendar strip -->
+    <div id="weekCalendar" class="week-calendar"></div>
+
+    <!-- Baby illustration area -->
+    <div class="hero-baby-area">
+        <div class="hero-baby-emoji" id="heroBabyEmoji">&#x1F476;</div>
+        <div class="hero-week-display">
+            <span id="currentWeek" class="hero-week-number">--</span>
+            <span class="hero-week-unit">semanas,</span>
+            <span id="currentDays" class="hero-week-days">0</span>
+            <span class="hero-week-unit">dias</span>
         </div>
-        <div class="progress-text" id="progressText">Configurar DUM para calcular</div>
+        <button class="hero-details-btn" onclick="showSection('weekly')">Detalhes</button>
     </div>
-    <div class="due-date">
-        <span>Previsão</span>
-        <strong id="dueDate">--/--/----</strong>
-        <div style="font-size:0.6em; color:var(--text-light); margin-top:2px;" title="Cálculo baseado em 280 dias a partir da DUM. Consulte seu obstetra para confirmação.">*estimativa</div>
+
+    <!-- Progress bar -->
+    <div class="hero-progress">
+        <div class="hero-progress-bar">
+            <div class="hero-progress-fill" id="progressBar" style="width:0%"></div>
+        </div>
+        <div class="hero-progress-text">
+            <span id="progressText">Configure a DUM</span>
+            <span>Previsão: <strong id="dueDate">--/--</strong></span>
+        </div>
     </div>
 </div>
 
-<!-- Mini Calendário Semanal (estilo Flo) -->
-<div id="weekCalendar" class="week-calendar"></div>
+<!-- Hidden elements for backward compat -->
+<div id="weekBanner" style="display:none"></div>
 
 <!-- Bottom Navigation (5 main tabs) -->
 <nav class="bottom-nav" role="navigation" aria-label="Menu principal">

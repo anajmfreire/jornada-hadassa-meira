@@ -499,35 +499,57 @@ function updateWeekBanner() {
     var cfg = appData.config;
     var info = calcCurrentGestationalAge();
 
+    // Month label no topo
+    var monthLabel = document.getElementById('heroMonthLabel');
+    var today = new Date();
+    var monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    if (monthLabel) monthLabel.textContent = today.getDate() + ' de ' + monthNames[today.getMonth()];
+
+    // Baby emoji por trimestre
+    var babyEmoji = document.getElementById('heroBabyEmoji');
+    var currentDaysEl = document.getElementById('currentDays');
+
     if (!info) {
         document.getElementById('currentWeek').textContent = '--';
-        document.getElementById('progressText').textContent = 'Configure a DUM ou dados da 1ª US nas configurações';
+        if (currentDaysEl) currentDaysEl.textContent = '0';
+        document.getElementById('progressText').textContent = 'Configure a DUM nas Configurações';
         document.getElementById('progressBar').style.width = '0%';
-        document.getElementById('dueDate').textContent = '--/--/----';
+        document.getElementById('dueDate').textContent = '--/--';
+        if (babyEmoji) babyEmoji.textContent = '\u{1F476}';
         return;
     }
 
     document.getElementById('currentWeek').textContent = info.weeks;
+    if (currentDaysEl) currentDaysEl.textContent = info.days;
+
+    // Emoji do bebê muda por período
+    if (babyEmoji) {
+        if (info.weeks < 8) babyEmoji.textContent = '\u{1F331}'; // semente
+        else if (info.weeks < 12) babyEmoji.textContent = '\u{1FAD8}'; // feijão
+        else if (info.weeks < 16) babyEmoji.textContent = '\u{1F351}'; // pêssego
+        else if (info.weeks < 24) babyEmoji.textContent = '\u{1F34C}'; // banana
+        else if (info.weeks < 32) babyEmoji.textContent = '\u{1F346}'; // berinjela
+        else if (info.weeks < 38) babyEmoji.textContent = '\u{1F349}'; // melancia
+        else babyEmoji.textContent = '\u{1F476}'; // bebê
+    }
+
     var pct = Math.min((info.totalDays / PREGNANCY_DAYS) * 100, 100);
     document.getElementById('progressBar').style.width = pct + '%';
-    document.getElementById('progressText').textContent =
-        info.weeks + ' semanas e ' + info.days + ' dias | ' + Math.round(pct) + '% da gestação';
+    document.getElementById('progressText').textContent = Math.round(pct) + '% da gestação';
 
+    var dppStr = '';
     if (cfg.dpp) {
-        document.getElementById('dueDate').textContent = formatDate(cfg.dpp);
+        dppStr = formatDate(cfg.dpp);
     } else if (cfg.dum) {
         var dumDate = parseLocalDate(cfg.dum);
         var dppDate = new Date(dumDate.getTime() + PREGNANCY_DAYS * MS_PER_DAY);
-        var dppStr = toLocalDateStr(dppDate);
-        document.getElementById('dueDate').textContent = formatDate(dppStr);
-    } else {
-        document.getElementById('dueDate').textContent = '--/--/----';
+        dppStr = formatDate(toLocalDateStr(dppDate));
     }
+    document.getElementById('dueDate').textContent = dppStr || '--/--';
 
-    var headerH1 = document.getElementById('appTitle');
-    var headerSub = document.getElementById('appSubtitle');
-    if (headerH1) headerH1.textContent = cfg.babyName ? 'A Jornada de ' + cfg.babyName : 'Minha Gestação';
-    if (headerSub) headerSub.textContent = cfg.babyName ? cfg.babyName + ' (' + (cfg.babySex || '') + ') \u{1F49C}' : '';
+    // Título da página
+    var babyName = cfg.babyName;
+    document.title = (babyName ? 'A Jornada de ' + babyName : 'Minha Gestação') + ' | ' + info.weeks + ' semanas';
 }
 
 // ============ WEEK CALENDAR STRIP ============

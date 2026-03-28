@@ -80,17 +80,133 @@ body::after {
     opacity: 0.4;
 }
 
-/* Header */
-.header {
-    background: linear-gradient(135deg, var(--pink-400) 0%, var(--pink-500) 50%, var(--purple-400) 100%);
-    padding: 20px;
-    text-align: center;
-    color: white;
+/* Hero Pregnancy (estilo Flo) */
+.hero-pregnancy {
+    background: linear-gradient(180deg, #f8b4c8 0%, #f9d4c2 40%, #fce8d5 100%);
+    padding: 0 0 15px;
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 4px 20px var(--shadow-pink);
-    transition: transform 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+.dark-mode .hero-pregnancy {
+    background: linear-gradient(180deg, #4a1d3a 0%, #2d1222 100%);
+}
+.hero-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    color: white;
+}
+.hero-pregnancy .week-calendar {
+    background: transparent;
+    box-shadow: none;
+    padding: 6px 10px;
+    position: static;
+}
+.hero-pregnancy .week-calendar .cal-day .day-label {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.65em;
+}
+.hero-pregnancy .week-calendar .cal-day .day-number {
+    color: white;
+    font-size: 1.05em;
+    width: 36px;
+    height: 36px;
+}
+.hero-pregnancy .week-calendar .cal-day.today .day-number {
+    background: white;
+    color: #ec4899;
+    font-weight: 900;
+}
+.hero-pregnancy .week-calendar .cal-day.today .day-label {
+    color: white;
+}
+.hero-pregnancy .week-calendar .cal-day.has-event .day-number {
+    border-color: rgba(255,255,255,0.5);
+}
+.hero-pregnancy .week-calendar .cal-day:hover {
+    background: rgba(255,255,255,0.15);
+}
+.hero-baby-area {
+    text-align: center;
+    padding: 15px 20px 10px;
+}
+.hero-baby-emoji {
+    font-size: 5em;
+    line-height: 1;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+}
+.hero-week-display {
+    font-size: 1.6em;
+    font-weight: 800;
+    color: #8b2252;
+    margin-bottom: 10px;
+}
+.dark-mode .hero-week-display { color: #f9a8d4; }
+.hero-week-number {
+    font-size: 1.3em;
+}
+.hero-week-days {
+    font-size: 1.3em;
+}
+.hero-week-unit {
+    font-size: 0.55em;
+    font-weight: 600;
+    color: #a0566e;
+    vertical-align: middle;
+}
+.dark-mode .hero-week-unit { color: #f9a8d4; opacity: 0.7; }
+.hero-details-btn {
+    background: white;
+    color: #8b2252;
+    border: none;
+    padding: 8px 28px;
+    border-radius: 25px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.85em;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+}
+.hero-details-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+.hero-progress {
+    padding: 0 20px;
+    margin-top: 10px;
+}
+.hero-progress-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.4);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+.hero-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ec4899, #a855f7);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+.hero-progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7em;
+    color: #8b2252;
+    font-weight: 600;
+}
+.dark-mode .hero-progress-text { color: #f9a8d4; }
+.hero-progress-text strong { color: #be185d; }
+.dark-mode .hero-progress-text strong { color: white; }
+
+/* Header (hidden - replaced by hero-pregnancy) */
+.header {
+    display: none;
 }
 
 .header h1 {
@@ -112,6 +228,7 @@ body::after {
 
 /* Week indicator */
 .week-banner {
+    display: none; /* Replaced by hero-pregnancy */
     background: linear-gradient(135deg, white, var(--pink-50));
     margin: 15px;
     padding: 15px 20px;
