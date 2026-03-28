@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f472b6"/>
+      <stop offset="50%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#a855f7"/>
+    </linearGradient>
+    <linearGradient id="heart" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.95"/>
+      <stop offset="100%" style="stop-color:#fce7f3;stop-opacity:0.9"/>
+    </linearGradient>
+    <linearGradient id="baby" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#be185d"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#00000020"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="110" fill="url(#bg)"/>
+
+  <!-- Decorative sparkles -->
+  <circle cx="100" cy="90" r="6" fill="white" opacity="0.5"/>
+  <circle cx="420" cy="100" r="4" fill="white" opacity="0.4"/>
+  <circle cx="80" cy="400" r="5" fill="white" opacity="0.3"/>
+  <circle cx="440" cy="380" r="7" fill="white" opacity="0.4"/>
+  <circle cx="130" cy="200" r="3" fill="white" opacity="0.3"/>
+  <circle cx="390" cy="440" r="4" fill="white" opacity="0.35"/>
+
+  <!-- Heart shape (white) -->
+  <g filter="url(#shadow)" transform="translate(256, 270) scale(1.15)">
+    <path d="M0 60 C0 60, -120 -60, -120 -40 C-120 10, -60 20, 0 80 C60 20, 120 10, 120 -40 C120 -60, 0 60, 0 60 Z"
+          fill="url(#heart)"
+          transform="translate(0, -20) scale(1.4)"/>
+  </g>
+
+  <!-- Simplified baby silhouette inside heart -->
+  <g transform="translate(256, 260)">
+    <!-- Baby head -->
+    <circle cx="0" cy="-30" r="32" fill="url(#baby)" opacity="0.85"/>
+    <!-- Baby body curl -->
+    <ellipse cx="5" cy="20" rx="25" ry="35" fill="url(#baby)" opacity="0.75" transform="rotate(-10)"/>
+    <!-- Baby cheek blush -->
+    <circle cx="14" cy="-24" r="6" fill="#f9a8d4" opacity="0.6"/>
+    <!-- Closed eye (sleeping) -->
+    <path d="M-10 -34 Q-4 -38 2 -34" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- Tiny smile -->
+    <path d="M-4 -22 Q0 -18 4 -22" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Small plus/medical cross -->
+  <g transform="translate(340, 160)">
+    <circle cx="0" cy="0" r="20" fill="white" opacity="0.9"/>
+    <rect x="-8" y="-3" width="16" height="6" rx="3" fill="#ec4899"/>
+    <rect x="-3" y="-8" width="6" height="16" rx="3" fill="#ec4899"/>
+  </g>
+
+  <!-- Bottom text -->
+  <text x="256" y="460" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" font-weight="700" fill="white" opacity="0.9">Minha Gestação</text>
+</svg>
