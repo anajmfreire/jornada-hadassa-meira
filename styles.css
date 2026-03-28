@@ -948,13 +948,14 @@ body::after {
 .ai-panel {
     display: none;
     position: fixed;
-    bottom: 0;
+    bottom: 70px;
     right: 0;
     width: 100%;
     max-width: 420px;
-    height: 85vh;
+    height: calc(100vh - 140px);
+    max-height: 600px;
     background: white;
-    border-radius: 25px 25px 0 0;
+    border-radius: 25px;
     box-shadow: -5px 0 30px rgba(0,0,0,0.15);
     z-index: 200;
     flex-direction: column;
@@ -1115,6 +1116,7 @@ body::after {
 
 .ai-input-area {
     padding: 12px 15px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--pink-100);
     display: flex;
     gap: 8px;
@@ -1209,7 +1211,8 @@ body::after {
 
 @media (min-width: 768px) {
     .ai-panel {
-        height: 600px;
+        height: calc(100vh - 100px);
+        max-height: 650px;
         bottom: 20px;
         right: 20px;
         border-radius: 25px;

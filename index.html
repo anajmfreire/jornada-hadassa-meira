@@ -8,7 +8,7 @@
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         caches.keys().then(function(keys) {
             keys.forEach(function(key) {
-                if ((key.indexOf('hadassa-meira-v') !== -1 || key.indexOf('minha-gestacao-v') !== -1) && key !== 'minha-gestacao-v2') {
+                if ((key.indexOf('hadassa-meira-v') !== -1 || key.indexOf('minha-gestacao-v') !== -1) && key !== 'minha-gestacao-v3') {
                     caches.delete(key);
                 }
             });
