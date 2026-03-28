@@ -356,6 +356,102 @@ body::after {
     font-size: 0.9em;
 }
 
+/* Story Overlay (Instagram Stories style) */
+.story-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 9999;
+    flex-direction: column;
+    background: #000;
+}
+.story-bars {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    gap: 4px;
+    z-index: 10;
+}
+.story-bar {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.story-bar.done { background: white; }
+.story-bar.active .story-bar-fill {
+    height: 100%;
+    background: white;
+    border-radius: 3px;
+    animation: storyProgress 8s linear forwards;
+}
+@keyframes storyProgress {
+    from { width: 0%; }
+    to { width: 100%; }
+}
+.story-close {
+    position: absolute;
+    top: 24px;
+    right: 16px;
+    z-index: 10;
+    background: rgba(0,0,0,0.3);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 1.1em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.story-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 30px 40px;
+    cursor: pointer;
+    user-select: none;
+    min-height: 100vh;
+    border-radius: 0;
+    text-align: center;
+    color: white;
+    overflow-y: auto;
+}
+.story-emoji {
+    font-size: 4em;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
+}
+.story-title {
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.6em;
+    font-weight: 800;
+    margin-bottom: 20px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.story-text {
+    font-size: 1em;
+    line-height: 1.7;
+    max-width: 500px;
+    opacity: 0.95;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.story-extra {
+    margin-top: 20px;
+    font-size: 0.9em;
+    font-weight: 700;
+    background: rgba(255,255,255,0.2);
+    padding: 10px 20px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+}
+
 /* Daily Content Cards (Flo style) */
 .daily-cards-scroll {
     display: flex;

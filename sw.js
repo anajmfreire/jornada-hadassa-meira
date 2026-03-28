@@ -1,6 +1,6 @@
 // AUDIT V1.2 [V12-SEC-004]: Cache apenas recursos do proprio origin.
 // CDNs protegidos por SRI no HTML — nao precisam de cache local.
-var CACHE_NAME = 'minha-gestacao-v7';
+var CACHE_NAME = 'minha-gestacao-v8';
 var ASSETS_TO_CACHE = [
     './',
     './index.html',

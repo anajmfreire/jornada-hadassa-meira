@@ -2597,107 +2597,178 @@ function renderComparison(prev, curr) {
 }
 
 // ============ DASHBOARD ============
-// ============ DAILY CONTENT (estilo Flo) ============
+// ============ DAILY CONTENT (estilo Flo) + STORIES ============
+function getDailyStories() {
+    var info = calcCurrentGestationalAge();
+    if (!info) return [];
+    var weeks = info.weeks;
+    var fruit = getFruitForWeek(weeks);
+    var weekContent = (typeof weeklyContentFull !== 'undefined' && weeklyContentFull[weeks]) ? weeklyContentFull[weeks] : null;
+    var trimestre = weeks < 14 ? 'Primeiro' : weeks < 28 ? 'Segundo' : 'Terceiro';
+
+    var stories = [];
+
+    // Story 1: Seu bebê
+    stories.push({
+        title: 'Seu bebê com ' + weeks + ' semanas',
+        emoji: fruit ? fruit.emoji : '\u{1F476}',
+        bg: 'linear-gradient(135deg, #fda4af, #ec4899)',
+        content: (weekContent && weekContent.baby) ? weekContent.baby : 'Seu bebê está crescendo! Consulte seu médico para mais detalhes.',
+        extra: fruit ? '\u{1F34E} Tamanho: ' + fruit.fruit + ' (' + fruit.size + ')' : '',
+        cardClass: 'daily-card-pink'
+    });
+
+    // Story 2: Seu corpo
+    stories.push({
+        title: 'Seu corpo com ' + weeks + ' semanas',
+        emoji: '\u{1F930}',
+        bg: 'linear-gradient(135deg, #93c5fd, #3b82f6)',
+        content: (weekContent && weekContent.body) ? weekContent.body : 'Seu corpo está se adaptando para o bebê. Descanse e se hidrate!',
+        extra: '',
+        cardClass: 'daily-card-blue'
+    });
+
+    // Story 3: Dicas
+    stories.push({
+        title: 'Dicas da semana ' + weeks,
+        emoji: '\u{1F4A1}',
+        bg: 'linear-gradient(135deg, #c4b5fd, #8b5cf6)',
+        content: (weekContent && weekContent.tips) ? weekContent.tips : 'Mantenha uma alimentação saudável e faça exercícios leves.',
+        extra: '',
+        cardClass: 'daily-card-lilac'
+    });
+
+    // Story 4: Trimestre/Alertas
+    stories.push({
+        title: trimestre + ' trimestre — Alertas',
+        emoji: '\u{26A0}\u{FE0F}',
+        bg: 'linear-gradient(135deg, #fde68a, #f59e0b)',
+        content: getTrimestreAlerts(weeks),
+        extra: '',
+        cardClass: 'daily-card-yellow'
+    });
+
+    // Story 5: Destaque
+    if (weekContent && weekContent.highlight) {
+        stories.push({
+            title: 'Destaque da semana',
+            emoji: '\u{2B50}',
+            bg: 'linear-gradient(135deg, #86efac, #22c55e)',
+            content: weekContent.highlight,
+            extra: '',
+            cardClass: 'daily-card-green'
+        });
+    }
+
+    return stories;
+}
+
+function getTrimestreAlerts(weeks) {
+    if (weeks < 14) return 'Primeiro trimestre: fase crucial de formação. Tome ácido fólico, evite medicamentos sem prescrição, faça o primeiro ultrassom e exames de sangue. Enjoos são normais — coma pouco e várias vezes ao dia.';
+    if (weeks < 28) return 'Segundo trimestre: fase de mais energia! Faça a ultrassom morfológica (20-24 semanas), o teste de glicose (24-28 semanas). Comece a sentir os movimentos do bebê. Hidrate-se bastante e use protetor solar para evitar melasma.';
+    return 'Terceiro trimestre: reta final! Faça o exame de Streptococcus (35-37 semanas). Prepare a mala da maternidade. Atenção a sinais de pré-eclâmpsia (inchaço, dor de cabeça, pressão alta). Conte os movimentos do bebê diariamente.';
+}
+
+var _storyTimer = null;
+var _storyIndex = 0;
+
+function openStory(startIndex) {
+    var stories = getDailyStories();
+    if (stories.length === 0) return;
+    _storyIndex = startIndex || 0;
+
+    var overlay = document.getElementById('storyOverlay');
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    renderStorySlide(stories);
+}
+
+function closeStory() {
+    var overlay = document.getElementById('storyOverlay');
+    if (overlay) overlay.style.display = 'none';
+    document.body.style.overflow = '';
+    if (_storyTimer) { clearTimeout(_storyTimer); _storyTimer = null; }
+}
+
+function renderStorySlide(stories) {
+    if (_storyIndex < 0 || _storyIndex >= stories.length) { closeStory(); return; }
+    var s = stories[_storyIndex];
+
+    // Progress bars
+    var barsHtml = '';
+    for (var i = 0; i < stories.length; i++) {
+        var cls = i < _storyIndex ? 'story-bar done' : i === _storyIndex ? 'story-bar active' : 'story-bar';
+        barsHtml += '<div class="' + cls + '"><div class="story-bar-fill"></div></div>';
+    }
+    document.getElementById('storyBars').innerHTML = barsHtml;
+
+    // Content
+    var content = document.getElementById('storyContent');
+    content.style.background = s.bg;
+    content.innerHTML =
+        '<div class="story-emoji">' + s.emoji + '</div>' +
+        '<h2 class="story-title">' + escapeHtml(s.title) + '</h2>' +
+        '<div class="story-text">' + escapeHtml(s.content) + '</div>' +
+        (s.extra ? '<div class="story-extra">' + escapeHtml(s.extra) + '</div>' : '');
+
+    // Auto-advance after 8 seconds
+    if (_storyTimer) clearTimeout(_storyTimer);
+    _storyTimer = setTimeout(function() {
+        _storyIndex++;
+        renderStorySlide(stories);
+    }, 8000);
+}
+
+function storyTap(e) {
+    var stories = getDailyStories();
+    var rect = e.currentTarget.getBoundingClientRect();
+    var x = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : rect.width / 2);
+    var relX = x - rect.left;
+
+    if (relX < rect.width * 0.3) {
+        // Tap left → previous
+        _storyIndex = Math.max(0, _storyIndex - 1);
+    } else {
+        // Tap right → next
+        _storyIndex++;
+    }
+    renderStorySlide(stories);
+}
+
 function renderDailyContent() {
     var container = document.getElementById('dailyContentSection');
     if (!container) return;
 
+    var stories = getDailyStories();
+    if (stories.length === 0) { container.innerHTML = ''; return; }
+
     var info = calcCurrentGestationalAge();
-    if (!info) {
-        container.innerHTML = '';
-        return;
-    }
-
-    var weeks = info.weeks;
-    var fruit = getFruitForWeek(weeks);
-
-    // Buscar conteúdo semanal
-    var weekContent = null;
-    if (typeof weeklyContentFull !== 'undefined' && weeklyContentFull[weeks]) {
-        weekContent = weeklyContentFull[weeks];
-    }
-
-    var trimestre = weeks < 14 ? 'Primeiro' : weeks < 28 ? 'Segundo' : 'Terceiro';
+    var weeks = info ? info.weeks : 0;
 
     var html = '';
-
-    // Título "Meu conteúdo diário"
     html += '<div style="padding:0 5px;margin-bottom:10px;">';
-    html += '<div style="font-size:0.95em;font-weight:800;color:var(--text-dark);">Meu conteúdo diário</div>';
+    html += '<div style="font-size:0.95em;font-weight:800;color:var(--text-dark);">Conteúdo da semana ' + weeks + '</div>';
     html += '</div>';
 
-    // Cards horizontais deslizáveis
+    // Cards horizontais — cada um abre story no índice correspondente
     html += '<div class="daily-cards-scroll">';
-
-    // Card 1: Seu bebê
-    html += '<div class="daily-card daily-card-pink" onclick="showSection(\'weekly\')">';
-    html += '<div class="daily-card-title">Seu bebê com<br>' + weeks + ' semanas</div>';
-    html += '<div class="daily-card-visual">' + (fruit ? fruit.emoji : '&#x1F476;') + '</div>';
-    if (fruit) html += '<div class="daily-card-sub">' + fruit.fruit + ' · ' + fruit.size + '</div>';
-    html += '</div>';
-
-    // Card 2: Seu corpo
-    html += '<div class="daily-card daily-card-blue" onclick="showSection(\'weekly\')">';
-    html += '<div class="daily-card-title">Seu corpo com<br>' + weeks + ' semanas</div>';
-    html += '<div class="daily-card-visual">&#x1F930;</div>';
-    html += '</div>';
-
-    // Card 3: Sintomas
-    html += '<div class="daily-card daily-card-lilac" onclick="showSection(\'diary\')">';
-    html += '<div class="daily-card-title">Sintomas</div>';
-    html += '<div class="daily-card-visual" style="font-size:1.5em;">&#x1FA7A; &#x1F912; &#x1F634;</div>';
-    html += '</div>';
-
-    // Card 4: Trimestre
-    html += '<div class="daily-card daily-card-yellow" onclick="showSection(\'weekly\')">';
-    html += '<div class="daily-card-title">' + trimestre + '<br>trimestre</div>';
-    html += '<div class="daily-card-visual"><i class="fas fa-notes-medical" style="font-size:1.8em;color:#d97706;"></i></div>';
-    html += '<div class="daily-card-sub">Alertas</div>';
-    html += '</div>';
-
-    // Card 5: Exames
-    html += '<div class="daily-card daily-card-green" onclick="showSection(\'exams\')">';
-    html += '<div class="daily-card-title">Exames<br>desta fase</div>';
-    html += '<div class="daily-card-visual"><i class="fas fa-vial" style="font-size:1.8em;color:#16a34a;"></i></div>';
-    html += '</div>';
-
-    html += '</div>'; // fim scroll
-
-    // Seção "O que esperar ao completar X semanas"
-    html += '<div class="card" style="margin-top:12px;">';
-    html += '<div style="font-size:1.05em;font-weight:800;color:var(--text-dark);margin-bottom:15px;">O que esperar ao completar ' + weeks + ' semanas</div>';
-
-    // 3 ícones
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:15px;">';
-
-    html += '<div style="text-align:center;cursor:pointer;" onclick="showSection(\'weekly\')">';
-    html += '<div style="font-size:2.2em;margin-bottom:6px;">&#x1F476;</div>';
-    html += '<div style="font-size:0.75em;font-weight:700;color:var(--text-dark);">Evolução do<br>bebê</div>';
-    html += '</div>';
-
-    html += '<div style="text-align:center;cursor:pointer;" onclick="showSection(\'weekly\')">';
-    html += '<div style="font-size:2.2em;margin-bottom:6px;">&#x1F930;</div>';
-    html += '<div style="font-size:0.75em;font-weight:700;color:var(--text-dark);">Mudanças<br>no corpo</div>';
-    html += '</div>';
-
-    html += '<div style="text-align:center;cursor:pointer;" onclick="showSection(\'tools\')">';
-    html += '<div style="font-size:2.2em;margin-bottom:6px;">&#x1F372;</div>';
-    html += '<div style="font-size:0.75em;font-weight:700;color:var(--text-dark);">Dieta<br>saudável</div>';
-    html += '</div>';
-
-    html += '</div>';
-
-    // Conteúdo da semana (preview)
-    if (weekContent) {
-        html += '<div style="border-top:1px solid var(--pink-100);padding-top:12px;">';
-        html += '<div style="font-size:0.85em;font-weight:700;color:var(--pink-600);margin-bottom:6px;">Destaque da semana ' + weeks + ':</div>';
-        html += '<div style="font-size:0.82em;color:var(--text-medium);line-height:1.6;">' + escapeHtml(weekContent.highlight || weekContent.baby || '') + '</div>';
+    stories.forEach(function(s, idx) {
+        html += '<div class="daily-card ' + s.cardClass + '" data-story-idx="' + idx + '">';
+        html += '<div class="daily-card-title">' + escapeHtml(s.title) + '</div>';
+        html += '<div class="daily-card-visual">' + s.emoji + '</div>';
         html += '</div>';
-    }
-
+    });
     html += '</div>';
 
     container.innerHTML = html;
+
+    // Cada card abre o story correspondente
+    container.querySelectorAll('[data-story-idx]').forEach(function(card) {
+        card.addEventListener('click', function() {
+            openStory(parseInt(card.dataset.storyIdx));
+        });
+    });
 }
 
 function renderDashboard() {

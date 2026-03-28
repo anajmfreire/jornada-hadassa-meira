@@ -823,6 +823,13 @@ if (!checkAccess()) {
     </div>
 </div>
 
+<!-- STORY OVERLAY (estilo Instagram Stories) -->
+<div id="storyOverlay" class="story-overlay" style="display:none;">
+    <div class="story-bars" id="storyBars"></div>
+    <button class="story-close" onclick="closeStory()"><i class="fas fa-times"></i></button>
+    <div class="story-body" id="storyContent" onclick="storyTap(event)"></div>
+</div>
+
 <!-- MODALS -->
 
 <!-- Ultrasound Modal -->
