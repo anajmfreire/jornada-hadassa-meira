@@ -368,6 +368,15 @@ function showSection(sectionName) {
     }
     if (sectionName === 'charts') initCharts();
     if (sectionName === 'params') renderParams();
+    // Atalho: vaccines → abre ferramentas na aba vacinas
+    if (sectionName === 'vaccines') {
+        showSection('tools');
+        if (typeof renderTool === 'function') renderTool('vaccines');
+        document.querySelectorAll('[data-tooltab]').forEach(function(t) { t.classList.remove('active'); });
+        var vTab = document.querySelector('[data-tooltab="vaccines"]');
+        if (vTab) vTab.classList.add('active');
+        return;
+    }
 
     var sectionNames = {
         dashboard: 'Início', weekly: 'Meu Bebê', diary: 'Diário',
