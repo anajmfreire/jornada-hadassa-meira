@@ -2772,6 +2772,21 @@ function renderDailyContent() {
 }
 
 function renderDashboard() {
+    // Baby illustration
+    var babyInfo = calcCurrentGestationalAge();
+    var babyCard = document.getElementById('babyIllustrationCard');
+    if (babyCard && babyInfo && typeof getBabyIllustration === 'function') {
+        var illust = getBabyIllustration(babyInfo.weeks);
+        if (illust) {
+            document.getElementById('babyIllustrationSvg').innerHTML = illust.svg;
+            document.getElementById('babyIllustrationLabel').textContent = 'Tamanho: ' + illust.label;
+            document.getElementById('babyIllustrationSize').textContent = illust.size;
+            babyCard.style.display = 'block';
+        }
+    } else if (babyCard) {
+        babyCard.style.display = 'none';
+    }
+
     // Conteúdo diário estilo Flo
     renderDailyContent();
     // UX-017: Achievements

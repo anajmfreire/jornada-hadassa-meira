@@ -260,6 +260,13 @@ if (!checkAccess()) {
             </div>
         </div>
 
+        <!-- Baby Illustration -->
+        <div id="babyIllustrationCard" class="card" style="text-align:center;padding:20px;background:linear-gradient(180deg,#fff5f7,#fdf2f8,white);border:none;box-shadow:0 2px 12px rgba(236,72,153,0.1);">
+            <div id="babyIllustrationSvg" style="width:160px;height:160px;margin:0 auto 10px;"></div>
+            <div id="babyIllustrationLabel" style="font-size:0.85em;color:var(--pink-600);font-weight:700;"></div>
+            <div id="babyIllustrationSize" style="font-size:0.75em;color:var(--text-light);"></div>
+        </div>
+
         <!-- Conteúdo Diário (estilo Flo) -->
         <div id="dailyContentSection"></div>
 
@@ -533,6 +540,7 @@ if (!checkAccess()) {
             <button class="sub-tab" data-tooltab="bpHistory">Pressão</button>
             <button class="sub-tab" data-tooltab="music">Músicas</button>
             <button class="sub-tab" data-tooltab="bumpTimeline">Evolução</button>
+            <button class="sub-tab" data-tooltab="vaccines"><i class="fas fa-syringe"></i> Vacinas</button>
         </div>
         <div id="toolsContent"></div>
     </div>
@@ -1300,6 +1308,7 @@ if (!checkAccess()) {
     <img id="photoViewerImg" style="max-width:95%;max-height:90%;object-fit:contain;border-radius:8px;">
 </div>
 
+<script src="baby-illustrations.js"></script>
 <script src="app.js"></script>
 <script src="features.js" defer></script>
 <script src="content.js" defer></script>

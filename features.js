@@ -2315,3 +2315,356 @@ var breastfeedingContent = [
     // Enhanced notifications
     scheduleAllNotifications();
 })();
+
+// ============ VACCINE CARD (Caderneta de Vacinação) ============
+
+var VACCINE_KEY = 'hadassa_vaccines';
+
+var defaultVaccines = [
+    {
+        id: 'hepb',
+        name: 'Hepatite B',
+        icon: 'fa-shield-virus',
+        description: 'Protege contra o vírus da Hepatite B, que pode ser transmitido ao bebê durante o parto.',
+        doses: [
+            { label: '1ª dose', period: 'Qualquer momento da gestação', status: 'pending', date: '', scheduledDate: '' },
+            { label: '2ª dose', period: '30 dias após a 1ª dose', status: 'pending', date: '', scheduledDate: '' },
+            { label: '3ª dose', period: '6 meses após a 1ª dose', status: 'pending', date: '', scheduledDate: '' }
+        ],
+        important: 'Essencial para prevenir transmissão vertical (mãe → bebê).',
+        contraindicated: false
+    },
+    {
+        id: 'dtpa',
+        name: 'dTpa (Tríplice Bacteriana Acelular)',
+        icon: 'fa-syringe',
+        description: 'Protege contra difteria, tétano e coqueluche. A coqueluche é muito perigosa para recém-nascidos.',
+        doses: [
+            { label: 'Dose única', period: 'Entre 20-36 semanas (ideal: 27-36 semanas)', status: 'pending', date: '', scheduledDate: '' }
+        ],
+        important: 'Deve ser repetida a cada gestação para passar anticorpos ao bebê.',
+        contraindicated: false
+    },
+    {
+        id: 'influenza',
+        name: 'Influenza (Gripe)',
+        icon: 'fa-lungs-virus',
+        description: 'Protege contra o vírus Influenza. Gestantes são grupo de risco para complicações da gripe.',
+        doses: [
+            { label: 'Dose anual', period: 'Qualquer período da gestação', status: 'pending', date: '', scheduledDate: '' }
+        ],
+        important: 'Disponível gratuitamente nas campanhas do SUS.',
+        contraindicated: false
+    },
+    {
+        id: 'covid',
+        name: 'Covid-19',
+        icon: 'fa-virus',
+        description: 'Protege contra o coronavírus SARS-CoV-2. Gestantes têm maior risco de formas graves.',
+        doses: [
+            { label: 'Esquema vacinal', period: 'Seguir orientação do Ministério da Saúde', status: 'pending', date: '', scheduledDate: '' }
+        ],
+        important: 'Consulte seu médico sobre o esquema atualizado.',
+        contraindicated: false
+    },
+    {
+        id: 'hepa',
+        name: 'Hepatite A',
+        icon: 'fa-shield-alt',
+        description: 'Protege contra o vírus da Hepatite A, transmitido por água e alimentos contaminados.',
+        doses: [
+            { label: 'Dose única', period: 'Se não vacinada anteriormente', status: 'pending', date: '', scheduledDate: '' }
+        ],
+        important: 'Verificar carteirinha anterior. Se já tomou, não precisa repetir.',
+        contraindicated: false
+    },
+    {
+        id: 'febreAmarela',
+        name: 'Febre Amarela',
+        icon: 'fa-exclamation-triangle',
+        description: 'Vacina de vírus vivo atenuado — apresenta riscos ao feto.',
+        doses: [
+            { label: 'Dose única', period: 'CONTRAINDICADA na gravidez', status: 'pending', date: '', scheduledDate: '' }
+        ],
+        important: 'CONTRAINDICADA durante a gestação. Só deve ser aplicada em situações de alto risco, com orientação médica.',
+        contraindicated: true
+    }
+];
+
+function getVaccines() {
+    var saved = localStorage.getItem(VACCINE_KEY);
+    if (saved) {
+        try { return JSON.parse(saved); } catch(e) {}
+    }
+    var fresh = JSON.parse(JSON.stringify(defaultVaccines));
+    saveVaccines(fresh);
+    return fresh;
+}
+
+function saveVaccines(data) {
+    localStorage.setItem(VACCINE_KEY, JSON.stringify(data));
+}
+
+function toggleVaccine(vaccineId, doseIndex) {
+    var vaccines = getVaccines();
+    for (var i = 0; i < vaccines.length; i++) {
+        if (vaccines[i].id === vaccineId) {
+            var dose = vaccines[i].doses[doseIndex];
+            if (dose.status === 'taken') {
+                dose.status = 'pending';
+                dose.date = '';
+            } else {
+                dose.status = 'taken';
+                dose.date = toLocalDateStr(new Date());
+            }
+            break;
+        }
+    }
+    saveVaccines(vaccines);
+    return vaccines;
+}
+
+function scheduleVaccine(vaccineId, doseIndex, date) {
+    var vaccines = getVaccines();
+    for (var i = 0; i < vaccines.length; i++) {
+        if (vaccines[i].id === vaccineId) {
+            var dose = vaccines[i].doses[doseIndex];
+            dose.scheduledDate = date;
+            if (dose.status !== 'taken') {
+                dose.status = 'scheduled';
+            }
+            break;
+        }
+    }
+    saveVaccines(vaccines);
+    return vaccines;
+}
+
+function getVaccineStats(vaccines) {
+    var total = 0;
+    var taken = 0;
+    var scheduled = 0;
+    var overdue = 0;
+    var today = toLocalDateStr(new Date());
+    vaccines.forEach(function(v) {
+        if (v.contraindicated) return;
+        v.doses.forEach(function(d) {
+            total++;
+            if (d.status === 'taken') taken++;
+            else if (d.status === 'scheduled') {
+                scheduled++;
+                if (d.scheduledDate && d.scheduledDate < today) overdue++;
+            }
+        });
+    });
+    return { total: total, taken: taken, scheduled: scheduled, overdue: overdue };
+}
+
+function renderVaccineCard(container) {
+    var vaccines = getVaccines();
+    var stats = getVaccineStats(vaccines);
+    var pct = stats.total > 0 ? Math.round((stats.taken / stats.total) * 100) : 0;
+
+    var html = '';
+
+    // Header - Caderneta de Vacinação
+    html += '<div style="background:linear-gradient(135deg, var(--pink-400), var(--pink-600));border-radius:16px;padding:20px;margin-bottom:16px;color:white;text-align:center;position:relative;overflow:hidden;">';
+    html += '<div style="position:absolute;top:-20px;right:-20px;font-size:6em;opacity:0.1;"><i class="fas fa-syringe"></i></div>';
+    html += '<div style="position:relative;z-index:1;">';
+    html += '<div style="font-size:1.8em;margin-bottom:4px;"><i class="fas fa-syringe"></i></div>';
+    html += '<h2 style="margin:0 0 4px;font-size:1.2em;font-weight:800;">Caderneta de Vacina\u00e7\u00e3o</h2>';
+    html += '<div style="font-size:0.8em;opacity:0.9;">Gestante — Hadassa Meira</div>';
+    html += '</div></div>';
+
+    // Stats summary
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">';
+    html += '<div style="background:white;border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);">';
+    html += '<div style="font-size:1.5em;font-weight:800;color:#22c55e;">' + stats.taken + '</div>';
+    html += '<div style="font-size:0.7em;color:var(--text-light);">Tomadas</div></div>';
+    html += '<div style="background:white;border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);">';
+    html += '<div style="font-size:1.5em;font-weight:800;color:#f59e0b;">' + stats.scheduled + '</div>';
+    html += '<div style="font-size:0.7em;color:var(--text-light);">Agendadas</div></div>';
+    html += '<div style="background:white;border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);">';
+    html += '<div style="font-size:1.5em;font-weight:800;color:var(--pink-600);">' + stats.total + '</div>';
+    html += '<div style="font-size:0.7em;color:var(--text-light);">Total</div></div>';
+    html += '</div>';
+
+    // Progress bar
+    html += '<div style="background:white;border-radius:12px;padding:14px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+    html += '<span style="font-size:0.85em;font-weight:700;color:var(--text-dark);">Progresso</span>';
+    html += '<span style="font-size:0.85em;font-weight:700;color:' + (pct === 100 ? '#22c55e' : 'var(--pink-600)') + ';">' + stats.taken + ' de ' + stats.total + ' doses (' + pct + '%)</span>';
+    html += '</div>';
+    html += '<div style="background:var(--pink-100);border-radius:10px;height:12px;overflow:hidden;">';
+    html += '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,#22c55e,#16a34a);border-radius:10px;transition:width 0.5s;"></div>';
+    html += '</div>';
+    if (pct === 100) {
+        html += '<div style="text-align:center;margin-top:8px;font-size:0.8em;color:#22c55e;font-weight:700;"><i class="fas fa-check-circle"></i> Todas as vacinas em dia! Parab\u00e9ns!</div>';
+    }
+    html += '</div>';
+
+    // Vaccine cards
+    vaccines.forEach(function(vaccine, vIdx) {
+        var allTaken = !vaccine.contraindicated && vaccine.doses.every(function(d) { return d.status === 'taken'; });
+        var hasScheduled = vaccine.doses.some(function(d) { return d.status === 'scheduled'; });
+        var borderColor = vaccine.contraindicated ? '#ef4444' : allTaken ? '#22c55e' : hasScheduled ? '#f59e0b' : 'var(--pink-200)';
+        var bgColor = vaccine.contraindicated ? '#fef2f2' : allTaken ? '#f0fdf4' : 'white';
+
+        html += '<div class="vaccine-card-item" style="background:' + bgColor + ';border:2px solid ' + borderColor + ';border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);">';
+
+        // Card header (clickable to expand)
+        html += '<div data-vaccine-toggle="' + vaccine.id + '" style="padding:14px;cursor:pointer;display:flex;align-items:center;gap:12px;">';
+
+        // Status icon
+        if (vaccine.contraindicated) {
+            html += '<div style="width:42px;height:42px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-ban" style="color:#ef4444;font-size:1.2em;"></i></div>';
+        } else if (allTaken) {
+            html += '<div style="width:42px;height:42px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-check-circle" style="color:#22c55e;font-size:1.2em;"></i></div>';
+        } else {
+            html += '<div style="width:42px;height:42px;border-radius:50%;background:var(--pink-100);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas ' + vaccine.icon + '" style="color:var(--pink-600);font-size:1.2em;"></i></div>';
+        }
+
+        html += '<div style="flex:1;min-width:0;">';
+        html += '<div style="font-weight:700;color:var(--text-dark);font-size:0.9em;">' + escapeHtml(vaccine.name) + '</div>';
+        html += '<div style="font-size:0.75em;color:var(--text-light);">' + vaccine.doses.length + (vaccine.doses.length === 1 ? ' dose' : ' doses');
+        if (vaccine.contraindicated) {
+            html += ' &mdash; <span style="color:#ef4444;font-weight:700;">CONTRAINDICADA</span>';
+        } else if (allTaken) {
+            html += ' &mdash; <span style="color:#22c55e;font-weight:700;">Completa</span>';
+        }
+        html += '</div></div>';
+        html += '<i class="fas fa-chevron-down" data-chevron="' + vaccine.id + '" style="color:var(--text-light);transition:transform 0.3s;"></i>';
+        html += '</div>';
+
+        // Expandable details (hidden by default)
+        html += '<div data-vaccine-details="' + vaccine.id + '" style="display:none;padding:0 14px 14px;border-top:1px solid ' + (vaccine.contraindicated ? '#fecaca' : 'var(--pink-100)') + ';">';
+
+        // Description
+        html += '<p style="font-size:0.8em;color:var(--text-medium);margin:12px 0 8px;line-height:1.5;">' + escapeHtml(vaccine.description) + '</p>';
+
+        // Contraindicated alert
+        if (vaccine.contraindicated) {
+            html += '<div style="background:#fee2e2;border:1px solid #fecaca;border-radius:10px;padding:12px;margin-bottom:12px;">';
+            html += '<div style="display:flex;align-items:center;gap:8px;">';
+            html += '<i class="fas fa-exclamation-triangle" style="color:#ef4444;font-size:1.2em;"></i>';
+            html += '<div>';
+            html += '<div style="font-weight:700;color:#dc2626;font-size:0.85em;">ATEN\u00c7\u00c3O: Vacina contraindicada</div>';
+            html += '<div style="font-size:0.75em;color:#991b1b;margin-top:2px;">' + escapeHtml(vaccine.important) + '</div>';
+            html += '</div></div></div>';
+        } else {
+            // Important note
+            if (vaccine.important) {
+                html += '<div style="background:var(--pink-50, #fff5f7);border:1px solid var(--pink-200);border-radius:10px;padding:10px;margin-bottom:12px;font-size:0.78em;color:var(--pink-600);">';
+                html += '<i class="fas fa-info-circle"></i> ' + escapeHtml(vaccine.important);
+                html += '</div>';
+            }
+
+            // Dose rows
+            vaccine.doses.forEach(function(dose, dIdx) {
+                var today = toLocalDateStr(new Date());
+                var isOverdue = dose.status === 'scheduled' && dose.scheduledDate && dose.scheduledDate < today;
+                var doseColor = dose.status === 'taken' ? '#22c55e' : isOverdue ? '#ef4444' : dose.status === 'scheduled' ? '#f59e0b' : '#9ca3af';
+                var doseBg = dose.status === 'taken' ? '#f0fdf4' : isOverdue ? '#fef2f2' : dose.status === 'scheduled' ? '#fffbeb' : '#f9fafb';
+
+                html += '<div style="background:' + doseBg + ';border:1px solid ' + doseColor + '33;border-radius:10px;padding:12px;margin-bottom:8px;">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+                html += '<div style="display:flex;align-items:center;gap:8px;">';
+
+                // Checkbox
+                html += '<div data-vaccine-check="' + vaccine.id + '" data-dose-idx="' + dIdx + '" style="width:24px;height:24px;border-radius:50%;border:2px solid ' + doseColor + ';display:flex;align-items:center;justify-content:center;cursor:pointer;background:' + (dose.status === 'taken' ? doseColor : 'white') + ';transition:all 0.2s;">';
+                if (dose.status === 'taken') {
+                    html += '<i class="fas fa-check" style="color:white;font-size:0.7em;"></i>';
+                }
+                html += '</div>';
+
+                html += '<div>';
+                html += '<div style="font-weight:700;font-size:0.85em;color:var(--text-dark);">' + escapeHtml(dose.label) + '</div>';
+                html += '<div style="font-size:0.72em;color:var(--text-light);">' + escapeHtml(dose.period) + '</div>';
+                html += '</div></div>';
+
+                // Status badge
+                var statusText = dose.status === 'taken' ? 'Tomada' : isOverdue ? 'Atrasada' : dose.status === 'scheduled' ? 'Agendada' : 'Pendente';
+                html += '<span style="font-size:0.7em;font-weight:700;color:' + doseColor + ';background:' + doseColor + '15;padding:3px 8px;border-radius:8px;">' + statusText + '</span>';
+                html += '</div>';
+
+                // Date info
+                if (dose.status === 'taken' && dose.date) {
+                    html += '<div style="font-size:0.75em;color:#22c55e;margin-left:32px;"><i class="fas fa-check-circle"></i> Aplicada em ' + formatDate(dose.date) + '</div>';
+                }
+                if (dose.scheduledDate && dose.status !== 'taken') {
+                    html += '<div style="font-size:0.75em;color:' + (isOverdue ? '#ef4444' : '#f59e0b') + ';margin-left:32px;"><i class="fas fa-calendar"></i> Agendada para ' + formatDate(dose.scheduledDate) + (isOverdue ? ' (ATRASADA)' : '') + '</div>';
+                }
+
+                // Schedule button (only if not taken)
+                if (dose.status !== 'taken') {
+                    html += '<div style="margin-top:8px;margin-left:32px;">';
+                    html += '<input type="date" data-schedule-input="' + vaccine.id + '-' + dIdx + '" value="' + (dose.scheduledDate || '') + '" style="padding:6px 10px;border:1px solid var(--pink-200);border-radius:8px;font-family:Nunito,sans-serif;font-size:0.8em;margin-right:6px;">';
+                    html += '<button data-schedule-btn="' + vaccine.id + '" data-schedule-dose="' + dIdx + '" class="btn btn-secondary" style="padding:5px 12px;font-size:0.75em;border-radius:8px;"><i class="fas fa-calendar-check"></i> Agendar</button>';
+                    html += '</div>';
+                }
+
+                html += '</div>';
+            });
+        }
+
+        html += '</div></div>';
+    });
+
+    // Info footer
+    html += '<div style="background:var(--pink-50, #fff5f7);border-radius:12px;padding:14px;margin-top:8px;text-align:center;">';
+    html += '<div style="font-size:0.78em;color:var(--text-medium);line-height:1.5;">';
+    html += '<i class="fas fa-info-circle" style="color:var(--pink-400);"></i> ';
+    html += 'Calend\u00e1rio baseado no PNI (Programa Nacional de Imuniza\u00e7\u00f5es). ';
+    html += 'Consulte sempre seu m\u00e9dico para orienta\u00e7\u00f5es individualizadas.';
+    html += '</div></div>';
+
+    container.innerHTML = html;
+
+    // Attach toggle listeners for expand/collapse
+    container.querySelectorAll('[data-vaccine-toggle]').forEach(function(el) {
+        el.addEventListener('click', function() {
+            var id = el.getAttribute('data-vaccine-toggle');
+            var details = container.querySelector('[data-vaccine-details="' + id + '"]');
+            var chevron = container.querySelector('[data-chevron="' + id + '"]');
+            if (details) {
+                var isOpen = details.style.display !== 'none';
+                details.style.display = isOpen ? 'none' : 'block';
+                if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+            }
+        });
+    });
+
+    // Attach checkbox listeners
+    container.querySelectorAll('[data-vaccine-check]').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var vid = el.getAttribute('data-vaccine-check');
+            var didx = parseInt(el.getAttribute('data-dose-idx'));
+            var updated = toggleVaccine(vid, didx);
+            var dose = null;
+            for (var i = 0; i < updated.length; i++) {
+                if (updated[i].id === vid) { dose = updated[i].doses[didx]; break; }
+            }
+            if (dose && dose.status === 'taken') {
+                showToast('<i class="fas fa-syringe"></i> Vacina registrada! &#x2705;');
+            }
+            renderVaccineCard(container);
+        });
+    });
+
+    // Attach schedule listeners
+    container.querySelectorAll('[data-schedule-btn]').forEach(function(el) {
+        el.addEventListener('click', function() {
+            var vid = el.getAttribute('data-schedule-btn');
+            var didx = parseInt(el.getAttribute('data-schedule-dose'));
+            var input = container.querySelector('[data-schedule-input="' + vid + '-' + didx + '"]');
+            if (input && input.value) {
+                scheduleVaccine(vid, didx, input.value);
+                showToast('<i class="fas fa-calendar-check"></i> Vacina agendada para ' + formatDate(input.value));
+                renderVaccineCard(container);
+            } else {
+                showToast('Selecione uma data para agendar');
+            }
+        });
+    });
+}

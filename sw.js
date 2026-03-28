@@ -1,6 +1,6 @@
 // AUDIT V1.2 [V12-SEC-004]: Cache apenas recursos do proprio origin.
 // CDNs protegidos por SRI no HTML — nao precisam de cache local.
-var CACHE_NAME = 'minha-gestacao-v8';
+var CACHE_NAME = 'minha-gestacao-v9';
 var ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -8,7 +8,8 @@ var ASSETS_TO_CACHE = [
     './app.js',
     './features.js',
     './content.js',
-    './extras.js'
+    './extras.js',
+    './baby-illustrations.js'
 ];
 
 // Install - cache core assets

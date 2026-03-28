@@ -841,6 +841,7 @@ function renderTool(tab) {
         case 'bpHistory': renderBPHistory(container); break;
         case 'music': renderMusic(container); break;
         case 'bumpTimeline': renderBumpTimeline(container); break;
+        case 'vaccines': renderVaccineCard(container); break;
     }
 }
 
