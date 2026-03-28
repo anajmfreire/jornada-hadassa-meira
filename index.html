@@ -4,15 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-    // Forçar atualização do Service Worker e limpar cache antigo
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    // Forçar limpeza total de cache e atualização do SW
+    if ('caches' in window) {
         caches.keys().then(function(keys) {
-            keys.forEach(function(key) {
-                if ((key.indexOf('hadassa-meira-v') !== -1 || key.indexOf('minha-gestacao-v') !== -1) && key !== 'minha-gestacao-v3') {
-                    caches.delete(key);
-                }
-            });
+            keys.forEach(function(key) { caches.delete(key); });
         });
+    }
+    if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(regs) {
             regs.forEach(function(r) { r.update(); });
         });
@@ -30,7 +28,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js" integrity="sha384-b8MpgG2ZzWN6OPAtiB1JiBmDr9MpTt3NKK6KQf61hC/L7X4wJrvoTeVmMFPgp3nL" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" integrity="sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g" crossorigin="anonymous">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260328">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
