@@ -55,12 +55,16 @@
 <!-- Decorative floating elements -->
 <div id="themeDecorContainer"></div>
 
-<!-- TELA DE ACESSO (bloqueio para não-compradores) -->
+<!-- TELA DE ACESSO (bloqueio após trial expirar) -->
 <div id="accessGate" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#fdf2f8,#f5f3ff,#fff8f0);z-index:9999;overflow-y:auto;">
     <div style="max-width:420px;margin:0 auto;padding:40px 20px;text-align:center;min-height:100vh;display:flex;flex-direction:column;justify-content:center;">
         <div style="font-size:3.5em;margin-bottom:10px;">&#x1F476;&#x1F49C;</div>
         <h1 style="font-family:'Dancing Script',cursive;font-size:2.2em;color:#ec4899;margin-bottom:8px;">Mamãe App</h1>
-        <p style="color:#666;font-size:0.95em;margin-bottom:30px;line-height:1.6;">O app mais completo para acompanhar cada semana da sua gravidez.</p>
+        <p style="color:#666;font-size:0.95em;margin-bottom:10px;line-height:1.6;">O app mais completo para acompanhar cada semana da sua gravidez.</p>
+        <div style="background:#fff3cd;border:1px solid #fbbf24;border-radius:12px;padding:12px;margin-bottom:20px;">
+            <div style="font-size:0.9em;font-weight:700;color:#92400e;">&#x23F0; Seu período de teste gratuito expirou</div>
+            <div style="font-size:0.8em;color:#78350f;margin-top:4px;">Adquira o acesso completo para continuar acompanhando sua gestação</div>
+        </div>
 
         <div style="background:white;border-radius:20px;padding:25px;box-shadow:0 4px 20px rgba(236,72,153,0.15);margin-bottom:20px;">
             <h3 style="color:#be185d;margin-bottom:15px;font-size:1em;"><i class="fas fa-key"></i> Código de Acesso</h3>
@@ -106,14 +110,16 @@
 // CÓDIGOS INDIVIDUAIS: você pode gerar códigos únicos por comprador
 
 var VALID_CODES = [
-    'MINHA-GESTACAO-2026',
+    'MAMAE-APP-2026',
     'MAMAE-VIP-2026',
-    'GESTACAO-PREMIUM',
+    'MAMAE-PREMIUM',
     'BEBE-AMADO-2026'
 ];
 
+var TRIAL_DAYS = 7; // Dias de teste grátis
+
 function checkAccess() {
-    // Verificar se já ativou antes
+    // Verificar se já ativou com código
     if (localStorage.getItem('mg_access_granted') === 'true') return true;
 
     // Verificar código na URL (?code=XXXX)
@@ -121,12 +127,36 @@ function checkAccess() {
     var urlCode = params.get('code') || params.get('codigo');
     if (urlCode && isValidCode(urlCode)) {
         grantAccess(urlCode);
-        // Limpar código da URL (segurança)
         window.history.replaceState({}, '', window.location.pathname + window.location.hash);
         return true;
     }
 
-    return false;
+    // TRIAL GRÁTIS: 7 dias sem código
+    var trialStart = localStorage.getItem('mg_trial_start');
+    if (!trialStart) {
+        // Primeira vez — iniciar trial
+        localStorage.setItem('mg_trial_start', new Date().toISOString());
+        return true;
+    }
+
+    var startDate = new Date(trialStart);
+    var now = new Date();
+    var diffDays = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < TRIAL_DAYS) {
+        return true; // Ainda no período de teste
+    }
+
+    return false; // Trial expirado
+}
+
+function getTrialDaysLeft() {
+    var trialStart = localStorage.getItem('mg_trial_start');
+    if (!trialStart) return TRIAL_DAYS;
+    var startDate = new Date(trialStart);
+    var now = new Date();
+    var diffDays = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+    return Math.max(0, TRIAL_DAYS - diffDays);
 }
 
 function isValidCode(code) {
@@ -180,6 +210,15 @@ document.addEventListener('DOMContentLoaded', function() {
 // Verificar acesso na inicialização
 if (!checkAccess()) {
     document.getElementById('accessGate').style.display = 'block';
+} else if (localStorage.getItem('mg_access_granted') !== 'true') {
+    // Está no trial — mostrar banner com dias restantes
+    var daysLeft = getTrialDaysLeft();
+    var trialBanner = document.createElement('div');
+    trialBanner.id = 'trialBanner';
+    trialBanner.style.cssText = 'background:linear-gradient(90deg,#ec4899,#a855f7);color:white;text-align:center;padding:8px 15px;font-size:0.8em;font-weight:700;cursor:pointer;position:fixed;bottom:60px;left:0;right:0;z-index:150;';
+    trialBanner.innerHTML = '<i class="fas fa-clock"></i> Teste grátis: ' + daysLeft + ' dia' + (daysLeft !== 1 ? 's' : '') + ' restante' + (daysLeft !== 1 ? 's' : '') + ' — <u>Ativar agora</u>';
+    trialBanner.onclick = function() { document.getElementById('accessGate').style.display = 'block'; };
+    document.body.appendChild(trialBanner);
 }
 </script>
 <style>
