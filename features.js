@@ -2331,40 +2331,66 @@ var defaultVaccines = [
             { label: '2ª dose', period: '30 dias após a 1ª dose', status: 'pending', date: '', scheduledDate: '' },
             { label: '3ª dose', period: '6 meses após a 1ª dose', status: 'pending', date: '', scheduledDate: '' }
         ],
-        important: 'Essencial para prevenir transmissão vertical (mãe → bebê).',
+        important: 'Essencial para prevenir transmissão vertical (mãe para bebê). São 3 doses obrigatórias.',
         contraindicated: false
     },
     {
         id: 'dtpa',
-        name: 'dTpa (Tríplice Bacteriana Acelular)',
+        name: 'dTpa (Coqueluche, Difteria e Tétano)',
         icon: 'fa-syringe',
-        description: 'Protege contra difteria, tétano e coqueluche. A coqueluche é muito perigosa para recém-nascidos.',
+        description: 'ESSENCIAL: Protege o recém-nascido contra a coqueluche (pertussis), doença que pode ser fatal em bebês. Os anticorpos da mãe passam pela placenta e protegem o bebê nos primeiros meses de vida.',
         doses: [
-            { label: 'Dose única', period: 'Entre 20-36 semanas (ideal: 27-36 semanas)', status: 'pending', date: '', scheduledDate: '' }
+            { label: 'Dose na gestação', period: 'Entre 27-36 semanas (ideal: semana 28)', status: 'pending', date: '', scheduledDate: '' }
         ],
-        important: 'Deve ser repetida a cada gestação para passar anticorpos ao bebê.',
+        important: 'DEVE ser repetida A CADA GESTAÇÃO. A coqueluche pode matar recém-nascidos que ainda não podem ser vacinados.',
         contraindicated: false
     },
     {
         id: 'influenza',
         name: 'Influenza (Gripe)',
         icon: 'fa-lungs-virus',
-        description: 'Protege contra o vírus Influenza. Gestantes são grupo de risco para complicações da gripe.',
+        description: 'Protege contra o vírus Influenza. Gestantes são grupo de risco para complicações graves da gripe, incluindo pneumonia.',
         doses: [
-            { label: 'Dose anual', period: 'Qualquer período da gestação', status: 'pending', date: '', scheduledDate: '' }
+            { label: 'Dose anual', period: 'Qualquer período da gestação (campanha SUS: abril-maio)', status: 'pending', date: '', scheduledDate: '' }
         ],
-        important: 'Disponível gratuitamente nas campanhas do SUS.',
+        important: 'GRATUITA no SUS durante a campanha. Gestantes têm prioridade!',
         contraindicated: false
     },
     {
         id: 'covid',
         name: 'Covid-19',
         icon: 'fa-virus',
-        description: 'Protege contra o coronavírus SARS-CoV-2. Gestantes têm maior risco de formas graves.',
+        description: 'Protege contra o coronavírus SARS-CoV-2. Gestantes têm maior risco de formas graves e internação em UTI.',
         doses: [
-            { label: 'Esquema vacinal', period: 'Seguir orientação do Ministério da Saúde', status: 'pending', date: '', scheduledDate: '' }
+            { label: '1ª dose', period: 'A partir do 1º trimestre', status: 'pending', date: '', scheduledDate: '' },
+            { label: '2ª dose', period: 'Conforme intervalo da vacina', status: 'pending', date: '', scheduledDate: '' },
+            { label: 'Reforço', period: 'Conforme calendário do MS', status: 'pending', date: '', scheduledDate: '' }
         ],
-        important: 'Consulte seu médico sobre o esquema atualizado.',
+        important: 'Pfizer é a vacina preferencial para gestantes. Consulte seu médico.',
+        contraindicated: false
+    },
+    {
+        id: 'vsr',
+        name: 'VSR / Abrysvo (Vírus Sincicial Respiratório)',
+        icon: 'fa-baby',
+        description: 'NOVA: Protege o bebê contra bronquiolite e pneumonia por VSR nos primeiros 6 meses de vida. O VSR é a principal causa de hospitalização de bebês. A vacina da mãe passa anticorpos ao bebê pela placenta.',
+        doses: [
+            { label: 'Dose única', period: 'Entre 32-36 semanas de gestação', status: 'pending', date: '', scheduledDate: '' }
+        ],
+        important: 'Vacina aprovada em 2024/2025. Protege o bebê contra a bronquiolite grave que pode levar à UTI. Consulte disponibilidade.',
+        contraindicated: false
+    },
+    {
+        id: 'dt',
+        name: 'dT (Dupla Adulto - Difteria e Tétano)',
+        icon: 'fa-shield-alt',
+        description: 'Protege contra difteria e tétano neonatal. Indicada se a gestante não tem esquema vacinal completo ou reforço em dia.',
+        doses: [
+            { label: '1ª dose', period: 'Se esquema incompleto: 1ª visita pré-natal', status: 'pending', date: '', scheduledDate: '' },
+            { label: '2ª dose', period: '30-60 dias após a 1ª dose', status: 'pending', date: '', scheduledDate: '' },
+            { label: '3ª dose', period: '6-12 meses após a 2ª dose', status: 'pending', date: '', scheduledDate: '' }
+        ],
+        important: 'Necessária apenas se não tem 3 doses documentadas ou se o último reforço tem mais de 5 anos.',
         contraindicated: false
     },
     {
@@ -2373,9 +2399,22 @@ var defaultVaccines = [
         icon: 'fa-shield-alt',
         description: 'Protege contra o vírus da Hepatite A, transmitido por água e alimentos contaminados.',
         doses: [
-            { label: 'Dose única', period: 'Se não vacinada anteriormente', status: 'pending', date: '', scheduledDate: '' }
+            { label: '1ª dose', period: 'Se não vacinada anteriormente', status: 'pending', date: '', scheduledDate: '' },
+            { label: '2ª dose', period: '6 meses após a 1ª dose', status: 'pending', date: '', scheduledDate: '' }
         ],
-        important: 'Verificar carteirinha anterior. Se já tomou, não precisa repetir.',
+        important: 'Verificar carteirinha anterior. Se já tomou 2 doses, não precisa repetir.',
+        contraindicated: false
+    },
+    {
+        id: 'antiRh',
+        name: 'Imunoglobulina Anti-D (Anti-Rh)',
+        icon: 'fa-tint',
+        description: 'OBRIGATÓRIA para mães Rh negativo com bebê Rh positivo. Previne a doença hemolítica do recém-nascido (eritroblastose fetal), que pode causar anemia grave e morte do bebê.',
+        doses: [
+            { label: 'Dose preventiva', period: 'Semana 28 de gestação', status: 'pending', date: '', scheduledDate: '' },
+            { label: 'Dose pós-parto', period: 'Até 72h após o nascimento (se bebê Rh+)', status: 'pending', date: '', scheduledDate: '' }
+        ],
+        important: 'SOMENTE para mães Rh NEGATIVO. Consulte seu tipo sanguíneo. Se você é Rh+, não precisa.',
         contraindicated: false
     },
     {
@@ -2386,7 +2425,18 @@ var defaultVaccines = [
         doses: [
             { label: 'Dose única', period: 'CONTRAINDICADA na gravidez', status: 'pending', date: '', scheduledDate: '' }
         ],
-        important: 'CONTRAINDICADA durante a gestação. Só deve ser aplicada em situações de alto risco, com orientação médica.',
+        important: 'CONTRAINDICADA durante a gestação. Só deve ser aplicada em situações de ALTO RISCO epidemiológico, com autorização médica por escrito.',
+        contraindicated: true
+    },
+    {
+        id: 'trípliceViral',
+        name: 'Tríplice Viral (SCR)',
+        icon: 'fa-exclamation-triangle',
+        description: 'Protege contra sarampo, caxumba e rubéola. É de VÍRUS VIVO, portanto CONTRAINDICADA na gestação.',
+        doses: [
+            { label: 'Dose única', period: 'CONTRAINDICADA na gravidez — tomar ANTES de engravidar', status: 'pending', date: '', scheduledDate: '' }
+        ],
+        important: 'Se você não foi vacinada, deve tomar APÓS o parto, antes da alta da maternidade. Aguardar 30 dias para engravidar novamente.',
         contraindicated: true
     }
 ];
@@ -2394,7 +2444,21 @@ var defaultVaccines = [
 function getVaccines() {
     var saved = localStorage.getItem(VACCINE_KEY);
     if (saved) {
-        try { return JSON.parse(saved); } catch(e) {}
+        try {
+            var parsed = JSON.parse(saved);
+            // Se a versão antiga tem menos vacinas, atualizar com as novas
+            if (parsed.length < defaultVaccines.length) {
+                var existingIds = {};
+                parsed.forEach(function(v) { existingIds[v.id] = true; });
+                defaultVaccines.forEach(function(dv) {
+                    if (!existingIds[dv.id]) {
+                        parsed.push(JSON.parse(JSON.stringify(dv)));
+                    }
+                });
+                saveVaccines(parsed);
+            }
+            return parsed;
+        } catch(e) {}
     }
     var fresh = JSON.parse(JSON.stringify(defaultVaccines));
     saveVaccines(fresh);
@@ -2468,12 +2532,23 @@ function renderVaccineCard(container) {
     var html = '';
 
     // Header - Caderneta de Vacinação
-    html += '<div style="background:linear-gradient(135deg, var(--pink-400), var(--pink-600));border-radius:16px;padding:20px;margin-bottom:16px;color:white;text-align:center;position:relative;overflow:hidden;">';
-    html += '<div style="position:absolute;top:-20px;right:-20px;font-size:6em;opacity:0.1;"><i class="fas fa-syringe"></i></div>';
-    html += '<div style="position:relative;z-index:1;">';
-    html += '<div style="font-size:1.8em;margin-bottom:4px;"><i class="fas fa-syringe"></i></div>';
-    html += '<h2 style="margin:0 0 4px;font-size:1.2em;font-weight:800;">Caderneta de Vacina\u00e7\u00e3o</h2>';
-    html += '<div style="font-size:0.8em;opacity:0.9;">Gestante — Hadassa Meira</div>';
+    // Visual de cartão de vacina real
+    var momName = (appData && appData.config && appData.config.momName) ? appData.config.momName : 'Gestante';
+    var babyName = (appData && appData.config && appData.config.babyName) ? appData.config.babyName : '';
+    html += '<div style="background:linear-gradient(135deg, #1e3a5f, #2d5a87);border-radius:16px;padding:0;margin-bottom:16px;color:white;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.2);">';
+    // Faixa superior
+    html += '<div style="background:#fbbf24;padding:4px 16px;text-align:center;"><span style="font-size:0.7em;font-weight:800;color:#78350f;letter-spacing:2px;">REPÚBLICA FEDERATIVA DO BRASIL</span></div>';
+    // Corpo do cartão
+    html += '<div style="padding:16px 20px;">';
+    html += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">';
+    html += '<div style="width:50px;height:50px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;"><i class="fas fa-syringe" style="font-size:1.4em;color:#fbbf24;"></i></div>';
+    html += '<div><div style="font-size:1.1em;font-weight:800;letter-spacing:1px;">CADERNETA DE VACINAÇÃO</div>';
+    html += '<div style="font-size:0.7em;opacity:0.7;">Programa Nacional de Imunizações — Gestante</div></div>';
+    html += '</div>';
+    html += '<div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;font-size:0.8em;">';
+    html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="opacity:0.7;">Nome:</span><strong>' + escapeHtml(momName) + '</strong></div>';
+    if (babyName) html += '<div style="display:flex;justify-content:space-between;"><span style="opacity:0.7;">Bebê:</span><strong>' + escapeHtml(babyName) + '</strong></div>';
+    html += '</div>';
     html += '</div></div>';
 
     // Stats summary
