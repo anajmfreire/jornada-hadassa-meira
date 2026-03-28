@@ -499,57 +499,34 @@ function updateWeekBanner() {
     var cfg = appData.config;
     var info = calcCurrentGestationalAge();
 
-    // Month label no topo
-    var monthLabel = document.getElementById('heroMonthLabel');
-    var today = new Date();
-    var monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    if (monthLabel) monthLabel.textContent = today.getDate() + ' de ' + monthNames[today.getMonth()];
-
-    // Baby emoji por trimestre
-    var babyEmoji = document.getElementById('heroBabyEmoji');
-    var currentDaysEl = document.getElementById('currentDays');
-
     if (!info) {
         document.getElementById('currentWeek').textContent = '--';
-        if (currentDaysEl) currentDaysEl.textContent = '0';
-        document.getElementById('progressText').textContent = 'Configure a DUM nas Configurações';
+        document.getElementById('progressText').textContent = 'Configure a DUM ou dados da 1ª US nas configurações';
         document.getElementById('progressBar').style.width = '0%';
-        document.getElementById('dueDate').textContent = '--/--';
-        if (babyEmoji) babyEmoji.textContent = '\u{1F476}';
+        document.getElementById('dueDate').textContent = '--/--/----';
         return;
     }
 
     document.getElementById('currentWeek').textContent = info.weeks;
-    if (currentDaysEl) currentDaysEl.textContent = info.days;
-
-    // Emoji do bebê muda por período
-    if (babyEmoji) {
-        if (info.weeks < 8) babyEmoji.textContent = '\u{1F331}'; // semente
-        else if (info.weeks < 12) babyEmoji.textContent = '\u{1FAD8}'; // feijão
-        else if (info.weeks < 16) babyEmoji.textContent = '\u{1F351}'; // pêssego
-        else if (info.weeks < 24) babyEmoji.textContent = '\u{1F34C}'; // banana
-        else if (info.weeks < 32) babyEmoji.textContent = '\u{1F346}'; // berinjela
-        else if (info.weeks < 38) babyEmoji.textContent = '\u{1F349}'; // melancia
-        else babyEmoji.textContent = '\u{1F476}'; // bebê
-    }
-
     var pct = Math.min((info.totalDays / PREGNANCY_DAYS) * 100, 100);
     document.getElementById('progressBar').style.width = pct + '%';
-    document.getElementById('progressText').textContent = Math.round(pct) + '% da gestação';
+    document.getElementById('progressText').textContent =
+        info.weeks + ' semanas e ' + info.days + ' dias | ' + Math.round(pct) + '% da gestação';
 
-    var dppStr = '';
     if (cfg.dpp) {
-        dppStr = formatDate(cfg.dpp);
+        document.getElementById('dueDate').textContent = formatDate(cfg.dpp);
     } else if (cfg.dum) {
         var dumDate = parseLocalDate(cfg.dum);
         var dppDate = new Date(dumDate.getTime() + PREGNANCY_DAYS * MS_PER_DAY);
-        dppStr = formatDate(toLocalDateStr(dppDate));
+        document.getElementById('dueDate').textContent = formatDate(toLocalDateStr(dppDate));
+    } else {
+        document.getElementById('dueDate').textContent = '--/--/----';
     }
-    document.getElementById('dueDate').textContent = dppStr || '--/--';
 
-    // Título da página
-    var babyName = cfg.babyName;
-    document.title = (babyName ? 'A Jornada de ' + babyName : 'Minha Gestação') + ' | ' + info.weeks + ' semanas';
+    var headerH1 = document.getElementById('appTitle');
+    var headerSub = document.getElementById('appSubtitle');
+    if (headerH1) headerH1.textContent = cfg.babyName ? 'A Jornada de ' + cfg.babyName : 'Minha Gestação';
+    if (headerSub) headerSub.textContent = cfg.babyName ? cfg.babyName + ' (' + (cfg.babySex || '') + ') \u{1F49C}' : '';
 }
 
 // ============ WEEK CALENDAR STRIP ============
@@ -2620,7 +2597,112 @@ function renderComparison(prev, curr) {
 }
 
 // ============ DASHBOARD ============
+// ============ DAILY CONTENT (estilo Flo) ============
+function renderDailyContent() {
+    var container = document.getElementById('dailyContentSection');
+    if (!container) return;
+
+    var info = calcCurrentGestationalAge();
+    if (!info) {
+        container.innerHTML = '';
+        return;
+    }
+
+    var weeks = info.weeks;
+    var fruit = getFruitForWeek(weeks);
+
+    // Buscar conteúdo semanal
+    var weekContent = null;
+    if (typeof weeklyContentFull !== 'undefined' && weeklyContentFull[weeks]) {
+        weekContent = weeklyContentFull[weeks];
+    }
+
+    var trimestre = weeks < 14 ? 'Primeiro' : weeks < 28 ? 'Segundo' : 'Terceiro';
+
+    var html = '';
+
+    // Título "Meu conteúdo diário"
+    html += '<div style="padding:0 5px;margin-bottom:10px;">';
+    html += '<div style="font-size:0.95em;font-weight:800;color:var(--text-dark);">Meu conteúdo diário</div>';
+    html += '</div>';
+
+    // Cards horizontais deslizáveis
+    html += '<div class="daily-cards-scroll">';
+
+    // Card 1: Seu bebê
+    html += '<div class="daily-card daily-card-pink" onclick="showSection(\'weekly\')">';
+    html += '<div class="daily-card-title">Seu bebê com<br>' + weeks + ' semanas</div>';
+    html += '<div class="daily-card-visual">' + (fruit ? fruit.emoji : '&#x1F476;') + '</div>';
+    if (fruit) html += '<div class="daily-card-sub">' + fruit.fruit + ' · ' + fruit.size + '</div>';
+    html += '</div>';
+
+    // Card 2: Seu corpo
+    html += '<div class="daily-card daily-card-blue" onclick="showSection(\'weekly\')">';
+    html += '<div class="daily-card-title">Seu corpo com<br>' + weeks + ' semanas</div>';
+    html += '<div class="daily-card-visual">&#x1F930;</div>';
+    html += '</div>';
+
+    // Card 3: Sintomas
+    html += '<div class="daily-card daily-card-lilac" onclick="showSection(\'diary\')">';
+    html += '<div class="daily-card-title">Sintomas</div>';
+    html += '<div class="daily-card-visual" style="font-size:1.5em;">&#x1FA7A; &#x1F912; &#x1F634;</div>';
+    html += '</div>';
+
+    // Card 4: Trimestre
+    html += '<div class="daily-card daily-card-yellow" onclick="showSection(\'weekly\')">';
+    html += '<div class="daily-card-title">' + trimestre + '<br>trimestre</div>';
+    html += '<div class="daily-card-visual"><i class="fas fa-notes-medical" style="font-size:1.8em;color:#d97706;"></i></div>';
+    html += '<div class="daily-card-sub">Alertas</div>';
+    html += '</div>';
+
+    // Card 5: Exames
+    html += '<div class="daily-card daily-card-green" onclick="showSection(\'exams\')">';
+    html += '<div class="daily-card-title">Exames<br>desta fase</div>';
+    html += '<div class="daily-card-visual"><i class="fas fa-vial" style="font-size:1.8em;color:#16a34a;"></i></div>';
+    html += '</div>';
+
+    html += '</div>'; // fim scroll
+
+    // Seção "O que esperar ao completar X semanas"
+    html += '<div class="card" style="margin-top:12px;">';
+    html += '<div style="font-size:1.05em;font-weight:800;color:var(--text-dark);margin-bottom:15px;">O que esperar ao completar ' + weeks + ' semanas</div>';
+
+    // 3 ícones
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:15px;">';
+
+    html += '<div style="text-align:center;cursor:pointer;" onclick="showSection(\'weekly\')">';
+    html += '<div style="font-size:2.2em;margin-bottom:6px;">&#x1F476;</div>';
+    html += '<div style="font-size:0.75em;font-weight:700;color:var(--text-dark);">Evolução do<br>bebê</div>';
+    html += '</div>';
+
+    html += '<div style="text-align:center;cursor:pointer;" onclick="showSection(\'weekly\')">';
+    html += '<div style="font-size:2.2em;margin-bottom:6px;">&#x1F930;</div>';
+    html += '<div style="font-size:0.75em;font-weight:700;color:var(--text-dark);">Mudanças<br>no corpo</div>';
+    html += '</div>';
+
+    html += '<div style="text-align:center;cursor:pointer;" onclick="showSection(\'tools\')">';
+    html += '<div style="font-size:2.2em;margin-bottom:6px;">&#x1F372;</div>';
+    html += '<div style="font-size:0.75em;font-weight:700;color:var(--text-dark);">Dieta<br>saudável</div>';
+    html += '</div>';
+
+    html += '</div>';
+
+    // Conteúdo da semana (preview)
+    if (weekContent) {
+        html += '<div style="border-top:1px solid var(--pink-100);padding-top:12px;">';
+        html += '<div style="font-size:0.85em;font-weight:700;color:var(--pink-600);margin-bottom:6px;">Destaque da semana ' + weeks + ':</div>';
+        html += '<div style="font-size:0.82em;color:var(--text-medium);line-height:1.6;">' + escapeHtml(weekContent.highlight || weekContent.baby || '') + '</div>';
+        html += '</div>';
+    }
+
+    html += '</div>';
+
+    container.innerHTML = html;
+}
+
 function renderDashboard() {
+    // Conteúdo diário estilo Flo
+    renderDailyContent();
     // UX-017: Achievements
     renderAchievements();
     // FEAT-002 + FEAT-003: Milestone card + fruit comparison
