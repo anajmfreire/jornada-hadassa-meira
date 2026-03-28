@@ -1,13 +1,16 @@
-# GUIA COMPLETO: Publicar "Minha Gestação" na Play Store
+# GUIA COMPLETO: Publicar "Mamãe App" na Play Store
 
 ## PRÉ-REQUISITOS
 - [x] App funcionando (PWA)
 - [x] Manifest.json configurado
 - [x] Política de Privacidade (legal.html)
-- [ ] Conta Google Play Developer (R$ 130)
-- [ ] Ícone PNG 512x512
+- [x] Conta Google Play Developer — J.F INOVAÇÕES DIGITAIS
+- [x] Ícone PNG 512x512 (icon-512.png)
+- [x] Pacote AAB gerado (Mamãe App.aab)
+- [x] AssetLinks configurado (.well-known/assetlinks.json)
+- [x] Signing key salva (signing.keystore)
 - [ ] Screenshots do app (mínimo 4)
-- [ ] Descrição curta e longa
+- [x] Descrição curta e longa (abaixo)
 
 ---
 
@@ -69,8 +72,8 @@ O PWABuilder transforma seu site PWA em um app Android automaticamente.
 4. Clique **"Package for stores"**
 5. Selecione **"Android"**
 6. Configure:
-   - **Package name:** `com.minhagestacao.app` (ou `com.anajmfreire.minhagestacao`)
-   - **App name:** Minha Gestação
+   - **Package name:** `com.jfinova.mamaeapp` (ou `com.anajmfreire.minhagestacao`)
+   - **App name:** Mamãe App
    - **App version:** 1.0.0
    - **Version code:** 1
    - **Host:** anajmfreire.github.io
@@ -108,7 +111,7 @@ O Google precisa verificar que o app pertence ao seu site.
 1. Acesse: https://play.google.com/console
 2. Clique **"Criar app"**
 3. Preencha:
-   - **Nome do app:** Minha Gestação - Diário da Gravidez
+   - **Nome do app:** Mamãe App - Diário da Gravidez
    - **Idioma padrão:** Português (Brasil)
    - **App ou jogo:** App
    - **Gratuito ou pago:** **Gratuito** (a monetização é via link externo/Hotmart)
@@ -116,7 +119,7 @@ O Google precisa verificar que o app pertence ao seu site.
 
 ### 6.1 Ficha da Loja (Store listing)
 
-**Título:** `Minha Gestação - Diário da Gravidez`
+**Título:** `Mamãe App - Diário da Gravidez`
 
 **Descrição curta (80 chars):**
 ```
@@ -125,7 +128,7 @@ Acompanhe cada semana da sua gravidez com ultrassons, peso, IA e muito mais!
 
 **Descrição longa (até 4000 chars):**
 ```
-Minha Gestação é o app mais completo para acompanhar cada semana da sua gravidez. Tudo em um só lugar, sem assinatura mensal.
+Mamãe App é o app mais completo para acompanhar cada semana da sua gravidez. Tudo em um só lugar, sem assinatura mensal.
 
 🤰 SEMANA A SEMANA
 Acompanhe o desenvolvimento do seu bebê da semana 4 à 42. Saiba o tamanho, peso e tudo que está se formando. Conteúdo diário com dicas personalizadas para cada fase.
@@ -180,7 +183,7 @@ Seus dados são seus. Sem propagandas, sem rastreamento. Política de privacidad
 ```
 
 **Ícone:** Upload `icon-512x512.png`
-**Feature graphic (1024x500):** Pode criar no Canva — fundo rosa com texto "Minha Gestação" + prints do app
+**Feature graphic (1024x500):** Pode criar no Canva — fundo rosa com texto "Mamãe App" + prints do app
 **Screenshots:** Upload as 4-8 screenshots que tirou
 
 ### 6.2 Classificação de conteúdo
@@ -269,7 +272,7 @@ Versão 1.0.0 - Lançamento inicial
 
 ## APÓS APROVAÇÃO
 
-1. O app estará em: `https://play.google.com/store/apps/details?id=com.minhagestacao.app`
+1. O app estará em: `https://play.google.com/store/apps/details?id=com.jfinova.mamaeapp`
 2. Compartilhe o link nas redes sociais
 3. Configure o link de compra na Hotmart/Kiwify apontando para a Play Store
 4. Ou mantenha o modelo de venda direta (link + código de acesso)
